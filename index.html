@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Les Voyelles</title>
+
+<style>
+
+body{
+font-family: Arial;
+background:#f4f4f4;
+text-align:center;
+}
+
+svg{
+margin-top:20px;
+}
+
+.vowel circle{
+cursor:pointer;
+transition: r 0.15s ease, filter 0.15s ease;
+}
+
+.vowel:hover circle{
+r:24;
+filter: drop-shadow(0px 0px 6px rgba(0,0,0,0.25));
+}
+
+.guide {
+stroke:#888;
+stroke-width:1;
+}
+
+text{
+font-size:16px;
+font-weight:bold;
+pointer-events:none;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>Les Voyelles</h1>
+<p>Clickez une voyelle pour l'écouter</p>
+
+<svg width="400" height="600">
+
+<!-- lines -->
+<line x1="200" y1="110" x2="80" y2="400" class="guide"/>
+<line x1="200" y1="110" x2="320" y2="400" class="guide"/>
+<line x1="80" y1="400" x2="320" y2="400" class="guide"/>
+<!-- center vertical line -->
+<line x1="200" y1="110" x2="200" y2="400" class="guide" />
+
+
+
+<!-- horizontal line (upper third) -->
+<line x1="150" y1="225" x2="250" y2="225" class="guide" />
+
+<!-- horizontal line (lower third) -->
+<line x1="120" y1="305" x2="280" y2="305" class="guide" />
+
+<!-- vowels -->
+
+
+<!-- upper intersections -->
+<g onclick="play('o')" class="vowel">
+<circle cx="150" cy="225" r="20" fill="#5dade2"/>
+<text x="150" y="230" text-anchor="middle">o</text>
+</g>
+
+<g onclick="play('oe')" class="vowel">
+<circle cx="200" cy="225" r="20" fill="#7ed957"/>
+<text x="200" y="230" text-anchor="middle">œ</text>
+</g>
+
+<g onclick="play('è')" class="vowel">
+<circle cx="250" cy="225" r="20" fill="#ff7eb9"/>
+<text x="250" y="230" text-anchor="middle">è</text>
+</g>
+
+<!-- middle -->
+<g onclick="play('eu')" class="vowel">
+<circle cx="200" cy="305" r="20" fill="#00b894"/>
+<text x="200" y="310" text-anchor="middle">eu</text>
+</g>
+
+<!-- lower intersections -->
+<g onclick="play('au')" class="vowel">
+<circle cx="120" cy="305" r="20" fill="#4a6bd6"/>
+<text x="120" y="310" text-anchor="middle">au</text>
+</g>
+
+<g onclick="play('é')" class="vowel">
+<circle cx="280" cy="305" r="20" fill="#ff6f3c"/>
+<text x="280" y="310" text-anchor="middle">é</text>
+</g>
+
+<!-- bottom -->
+<g onclick="play('ou')" class="vowel">
+<circle cx="80" cy="400" r="20" fill="#2ec4b6"/>
+<text x="80" y="405" text-anchor="middle">ou</text>
+</g>
+
+<g onclick="play('u')" class="vowel">
+<circle cx="200" cy="400" r="20" fill="#ffd93d"/>
+<text x="200" y="405" text-anchor="middle">u</text>
+</g>
+
+<g onclick="play('i')" class="vowel">
+<circle cx="320" cy="400" r="20" fill="#ff4d4d"/>
+<text x="320" y="405" text-anchor="middle">i</text>
+</g>
+
+<!-- top  -->
+<g onclick="play('a')" class="vowel">
+<circle cx="200" cy="120" r="20" fill="#9b59b6"/>
+<text x="200" y="125" text-anchor="middle">a</text>
+</g>
+
+
+<!-- nasal vowels -->
+<g onclick="play('an')" class="vowel">
+<circle cx="200" cy="70" r="20" fill="#e6a8d7"/>
+<text x="200" y="75" text-anchor="middle">an</text>
+</g>
+
+<g onclick="play('on')" class="vowel">
+<circle cx="110" cy="170" r="20" fill="#c39bd3"/>
+<text x="110" y="175" text-anchor="middle">on</text>
+</g>
+
+<g onclick="play('in')" class="vowel">
+<circle cx="290" cy="170" r="20" fill="#f7dc6f"/>
+<text x="290" y="175" text-anchor="middle">in</text>
+</g>
+
+
+</svg>
+
+<script>
+
+function play(sound){
+
+let audio = new Audio("sounds/" + sound + ".mp3");
+
+audio.play();
+
+}
+
+</script>
+
+</body>
+</html>
