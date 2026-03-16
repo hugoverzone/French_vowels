@@ -1,0 +1,108 @@
+/* French Vowels App Styles */
+
+:root {
+  --primary-bg: #f4f4f4;
+  --guide-color: #888;
+  --text-size: 16px;
+  --mobile-text-size: 14px;
+  --transition-duration: 0.15s;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: var(--primary-bg);
+  text-align: center;
+  margin: 0;
+  padding: 10px;
+  line-height: 1.4;
+}
+
+h1 {
+  margin-top: 10px;
+  margin-bottom: 5px;
+  font-size: 24px;
+  color: #333;
+}
+
+p {
+  margin: 5px 0 20px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+svg {
+  margin-top: 20px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.vowel circle {
+  cursor: pointer;
+  transition: r var(--transition-duration) ease, filter var(--transition-duration) ease;
+  touch-action: manipulation;
+}
+
+.vowel:hover circle,
+.vowel:active circle {
+  r: 24;
+  filter: drop-shadow(0px 0px 6px rgba(0, 0, 0, 0.25));
+}
+
+.guide {
+  stroke: var(--guide-color);
+  stroke-width: 1;
+}
+
+text {
+  font-size: var(--text-size);
+  font-weight: bold;
+  pointer-events: none;
+  fill: #333;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+  h1 {
+    font-size: 20px;
+  }
+
+  p {
+    font-size: 12px;
+  }
+
+  text {
+    font-size: var(--mobile-text-size);
+  }
+
+  body {
+    padding: 5px;
+  }
+}
+
+/* Additional utility classes for future enhancements */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.hidden {
+  display: none;
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
