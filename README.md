@@ -1,31 +1,113 @@
 # French Vowels Web App
 
-An interactive French vowel pronunciation guide with a visual vowel triangle.
+An interactive French vowel pronunciation guide with a visual vowel triangle. This project includes multiple versions to support different learning styles and use cases.
 
-## File Structure
+## Project Structure
 
-- `index.html` - Main HTML file with SVG vowel triangle
-- `styles.css` - External CSS styles for responsive design
-- `sounds/` - Directory containing MP3 files for vowel pronunciations
+```
+French_vowels/
+├── index.html              # Main HTML with vowel text labels
+├── styles.css              # Shared CSS for all versions
+├── sounds/                 # Directory containing MP3 files for pronunciations
+├── README.md
+├── written/
+│   └── index.html          # Version with vowel names (o, è, a, etc.)
+├── emoticons/
+│   ├── index.html          # Version with Unicode emojis as visual aids
+│   └── pictograms/         # (For custom emoji mappings if needed)
+├── icons/
+│   ├── index.html          # Version with PNG pictograms from pictograms folder
+│   └── pictograms/         # Directory for custom PNG images (named by sound)
+```
+
+## Versions
+
+### 1. **Main Version** (`index.html`)
+- Clean, minimalist design
+- Colored circles with text labels
+- Perfect for learning vowel positions
+
+### 2. **Written Version** (`written/index.html`)
+- Displays vowel names and IPA symbols
+- Text-based learning approach
+- Helps with vowel identification
+
+### 3. **Emoticons Version** (`emoticons/index.html`)
+- Uses Unicode emojis as visual mnemonics
+- Emojis are hardcoded in the SVG for simplicity
+- Easy to customize by editing emoji characters directly
+
+### 4. **Icons Version** (`icons/index.html`)
+- Uses PNG pictograms from the `pictograms/` folder
+- **Dynamic loading:** Automatically matches PNG filenames to sound names
+- **Easy customization:** Add or replace PNG files with the same naming convention
+- **Graceful fallback:** If a PNG doesn't exist, the colored circle displays instead
+- **File naming:** `pictograms/{sound}.png` (e.g., `pictograms/a.png`, `pictograms/o.png`)
 
 ## CSS Organization
 
 The `styles.css` file is organized as follows:
 
-1. **CSS Variables** - Define colors, sizes, and other reusable values
-2. **Reset/Base Styles** - Box-sizing and basic body styles
-3. **Component Styles** - Styles for specific elements (h1, p, svg, etc.)
-4. **Interactive Elements** - Hover and active states for vowels
-5. **Responsive Design** - Media queries for mobile devices
+1. **CSS Variables** - Define colors, sizes, and transitions for easy theming
+2. **Reset/Base Styles** - Box-sizing and foundational body styling
+3. **Component Styles** - Typography and SVG positioning
+4. **Interactive Elements** - Hover and active states for touch/click feedback
+5. **Responsive Design** - Mobile-first media queries for screens ≤480px
 6. **Utility Classes** - Reusable classes for future enhancements
 
 ## Features
 
-- Responsive design that works on desktop and mobile
-- Interactive vowel circles that play pronunciation audio
-- Visual feedback on hover/tap
-- Clean, modern styling with subtle shadows and transitions
+### Desktop & Mobile
+- ✅ **Fully responsive design** - Works seamlessly on phones, tablets, and desktops
+- ✅ **Interactive vowel circles** - Click/tap any circle to play pronunciation audio
+- ✅ **Visual feedback** - Hover effects on desktop, active states on mobile/touch devices
+- ✅ **Touch-optimized** - No touch delay, proper `touch-action` handling
+
+### Audio
+- ✅ **MP3 pronunciation files** - Located in `sounds/` directory
+- ✅ **Auto-mapped to sounds** - Filenames match the vowel sound names (e.g., `o.mp3`, `a.mp3`)
+
+### Visual Design
+- ✅ **SVG-based triangle** - Scalable, responsive vowel triangle
+- ✅ **Color-coded vowels** - Each vowel has a unique color for quick identification
+- ✅ **Smooth animations** - Transitions on hover/active states
+- ✅ **Subtle shadow effects** - Professional, modern appearance
 
 ## Development
 
-To modify styles, edit `styles.css`. The design uses CSS custom properties (variables) for easy theming and maintenance.
+### Modifying Styles
+- Edit `styles.css` directly
+- Uses CSS custom properties (variables) for easy color/size adjustments
+- Media queries ensure mobile responsiveness
+
+### Adding/Updating PNG Icons (Icons Version)
+1. Create PNG files of your choice
+2. Place them in `icons/pictograms/` folder
+3. Rename each PNG to match a vowel sound (e.g., `a.png`, `o.png`, `oe.png`)
+4. The app automatically loads and positions them on the circles
+5. If a PNG is missing, the colored circle displays instead
+
+### Customizing Emojis (Emoticons Version)
+- Open `emoticons/index.html`
+- Find the `<text>` element inside each `<g class="vowel">` group
+- Replace the emoji character directly (e.g., change `❤️` to your preferred emoji)
+- No JavaScript needed — changes are instant
+
+### File Naming Convention
+All PNGs in `pictograms/` should match these sound names exactly:
+- Oral vowels: `a`, `o`, `oe`, `è`, `eu`, `au`, `é`, `ou`, `u`, `i`
+- Nasal vowels: `an`, `on`, `in`
+
+## Browser Compatibility
+
+- ✅ Chrome/Edge (full support)
+- ✅ Firefox (full support)
+- ✅ Safari (full support, including iOS)
+- ✅ Mobile browsers (iOS Safari, Chrome Mobile, etc.)
+
+## Future Enhancements
+
+- Multiple language support (other Romance languages with vowel triangles)
+- Animation on page load
+- Settings/preferences modal for customization
+- Keyboard shortcuts for vowel playback
