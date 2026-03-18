@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le Triangle des Voyelles</title>
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body>
+
+<h1>Les Voyelles</h1>
+<p>Cliquez sur une voyelle pour l'écouter</p>
+
+<svg viewBox="0 0 400 600" preserveAspectRatio="xMidYMid meet">
+
+<!-- lines -->
+<line x1="200" y1="110" x2="80" y2="400" class="guide"/>
+<line x1="200" y1="110" x2="320" y2="400" class="guide"/>
+<line x1="80" y1="400" x2="320" y2="400" class="guide"/>
+<!-- center vertical line -->
+<line x1="200" y1="110" x2="200" y2="400" class="guide" />
+
+
+
+<!-- horizontal line (upper third) -->
+<line x1="150" y1="225" x2="250" y2="225" class="guide" />
+
+<!-- horizontal line (lower third) -->
+<line x1="120" y1="305" x2="280" y2="305" class="guide" />
+
+<!-- vowels -->
+
+
+<!-- upper intersections -->
+<g onclick="play('o')" class="vowel">
+<circle cx="150" cy="225" r="20" fill="#5dade2"/>
+<text x="150" y="230" text-anchor="middle">🍎</text>
+</g>
+
+<g onclick="play('oe')" class="vowel">
+<circle cx="200" cy="225" r="20" fill="#7ed957"/>
+<text x="200" y="230" text-anchor="middle">❤️</text>
+</g>
+
+<g onclick="play('è')" class="vowel">
+<circle cx="250" cy="225" r="20" fill="#ff7eb9"/>
+<text x="250" y="230" text-anchor="middle">🥛</text>
+</g>
+
+<!-- middle -->
+<g onclick="play('eu')" class="vowel">
+<circle cx="200" cy="305" r="20" fill="#00b894"/>
+<text x="200" y="310" text-anchor="middle">🔥</text>
+</g>
+
+<!-- lower intersections -->
+<g onclick="play('au')" class="vowel">
+<circle cx="120" cy="305" r="20" fill="#4a6bd6"/>
+<text x="120" y="310" text-anchor="middle">🎁</text>
+</g>
+
+<g onclick="play('é')" class="vowel">
+<circle cx="280" cy="305" r="20" fill="#ff6f3c"/>
+<text x="280" y="310" text-anchor="middle">☕</text>
+</g>
+
+<!-- bottom -->
+<g onclick="play('ou')" class="vowel">
+<circle cx="80" cy="400" r="20" fill="#2ec4b6"/>
+<text x="80" y="405" text-anchor="middle">👨‍👩‍👦‍👦</text>
+</g>
+
+<g onclick="play('u')" class="vowel">
+<circle cx="200" cy="400" r="20" fill="#ffd93d"/>
+<text x="200" y="405" text-anchor="middle">🫵</text>
+</g>
+
+<g onclick="play('i')" class="vowel">
+<circle cx="320" cy="400" r="20" fill="#ff4d4d"/>
+<text x="320" y="405" text-anchor="middle">🥝</text>
+</g>
+
+<!-- top  -->
+<g onclick="play('a')" class="vowel">
+<circle cx="200" cy="120" r="20" fill="#9b59b6"/>
+<text x="200" y="125" text-anchor="middle">🧔‍♂️</text>
+</g>
+
+
+<!-- nasal vowels -->
+<g onclick="play('an')" class="vowel">
+<circle cx="200" cy="70" r="20" fill="#e6a8d7"/>
+<text x="200" y="75" text-anchor="middle">🦷</text>
+</g>
+
+<g onclick="play('on')" class="vowel">
+<circle cx="110" cy="170" r="20" fill="#adceea"/>
+<text x="110" y="175" text-anchor="middle">🍬</text>
+</g>
+
+<g onclick="play('in')" class="vowel">
+<circle cx="290" cy="170" r="20" fill="#f3b795"/>
+<text x="290" y="175" text-anchor="middle">🍞</text>
+</g>
+
+
+</svg>
+
+<script>
+
+function play(sound){
+
+let audio = new Audio("../sounds/" + sound + ".mp3");
+
+audio.play();
+
+}
+
+</script>
+
+</body>
+
+</html>
