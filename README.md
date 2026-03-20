@@ -36,13 +36,17 @@ French_vowels/
 - Colored circles with text labels over triangles
 
 ### 2. **Written Version** (`text/index.html`)
-- Displays vowel names over colored circles with text labels over triangles
+- Displays vowel names over colored circles on the triangles
 
 ### 3. **Emoticons Version** (`emojis/index.html`)
-- Uses Unicode emojis as visual mnemonics over colored circles with text labels over triangles
+- Uses Unicode emojis as visual mnemonics over colored circles on the triangles
 - Avoids usage wrights as emojis are free tu use
-  
-### 4. **Icons Version** (`picrogram/index.html`)
+
+### 4. **Number Version** (`numbered/index.html`)
+- Displays numbers which contain the vowel sound over colored circles on the triangles
+- Includes 10/13 vowels (au, o, é don't have numbers)
+
+### 5. **Icons Version** (`picrogram/index.html`)
 - Uses PNG pictograms from the `pictograms/` folder
 - **Dynamic loading:** Automatically matches PNG filenames to sound names
 - **Easy customization:** Add or replace PNG files with the same naming convention
