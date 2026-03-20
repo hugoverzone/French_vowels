@@ -2,24 +2,32 @@
 
 An interactive French vowel pronunciation guide with a visual vowel triangle. This project includes multiple versions to support different learning styles and use cases.
 
-![Vowel Triangle Concept](TELL_Triangle_graphèmes-1.jpg)
+![Vowel Triangle Concept](assets/images/TELL_Triangle_graphèmes-1.jpg)
 
 ## Project Structure
 
 ```
 French_vowels/
-├── index.html              # Main HTML with vowel text labels
 ├── styles.css              # Shared CSS for all versions
-├── sounds/                 # Directory containing MP3 files for pronunciations
 ├── README.md
-├── written/
+├── assets/
+│   ├── audio/
+│   │   ├── vowels_fonetix_with_example/    # MP3 files with example words
+│   │   ├── vowels_fonetix_without_example/ # MP3 files without example words
+│   │   └── sounds/                         # Legacy audio files
+│   └── images/
+│       └── TELL_Triangle_graphèmes-1.jpg   # Vowel triangle concept image
+├── basic/
+│   └── index.html          # Minimalist version with colored circles
+├── text/
 │   └── index.html          # Version with vowel names (o, è, a, etc.)
-├── emoticons/
-│   ├── index.html          # Version with Unicode emojis as visual aids
-│   └── pictograms/         # (For custom emoji mappings if needed)
-├── icons/
+├── emoji/
+│   └── index.html          # Version with Unicode emojis as visual aids
+├── pictogram/
 │   ├── index.html          # Version with PNG pictograms from pictograms folder
 │   └── pictograms/         # Directory for custom PNG images (named by sound)
+└── numbered/
+    └── index.html          # Version with numbered vowel positions
 ```
 
 ## Versions
@@ -68,8 +76,8 @@ The `styles.css` file is organized as follows:
 ### Audio
 - ✅ **MP3 pronunciation files** - From [Fonetix.org](https://fonetix.org/fr/etudier/ressources)
 - ✅ **Two versions available:**
-  - `vowels_fonetix_with_example/` - Includes example words with each vowel
-  - `vowels_fonetix_without_example/` - Vowel sounds only
+  - `assets/audio/vowels_fonetix_with_example/` - Includes example words with each vowel
+  - `assets/audio/vowels_fonetix_without_example/` - Vowel sounds only
 - ✅ **Auto-mapped to sounds** - Filenames match the vowel sound names (e.g., `o.mp3`, `a.mp3`)
 
 ### Visual Design
@@ -92,14 +100,14 @@ The `styles.css` file is organized as follows:
 4. The app automatically loads and positions them on the circles
 5. If a PNG is missing, the colored circle displays instead
 
-### Customizing Emojis (Emoticons Version)
-- Open `emoticons/index.html`
+### Customizing Emojis (Emoji Version)
+- Open `emoji/index.html`
 - Find the `<text>` element inside each `<g class="vowel">` group
 - Replace the emoji character directly (e.g., change `❤️` to your preferred emoji)
 - No JavaScript needed — changes are instant
 
 ### File Naming Convention
-All PNGs in `pictograms/` should match these sound names exactly:
+All PNGs in `pictogram/pictograms/` should match these sound names exactly:
 - Oral vowels: `a`, `o`, `oe`, `è`, `eu`, `au`, `é`, `ou`, `u`, `i`
 - Nasal vowels: `an`, `on`, `in`
 
