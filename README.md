@@ -32,7 +32,7 @@ French_vowels/
 
 ## Versions
 
-### 1. **Main Version** (`index.html`)
+### 1. **Main Version** (`basic/index.html`)
 - Clean, minimalist design
 - Colored circles with text labels
 - Perfect for learning vowel positions
@@ -70,6 +70,7 @@ The `styles.css` file is organized as follows:
 ### Desktop & Mobile
 - ✅ **Fully responsive design** - Works seamlessly on phones, tablets, and desktops
 - ✅ **Interactive vowel circles** - Click/tap any circle to play pronunciation audio
+- ✅ **Audio toggle** - Switch between vowel sounds only or with example words
 - ✅ **Visual feedback** - Hover effects on desktop, active states on mobile/touch devices
 - ✅ **Touch-optimized** - No touch delay, proper `touch-action` handling
 

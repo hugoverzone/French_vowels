@@ -121,7 +121,28 @@ text {
   text-decoration: none;
 }
 
-.attribution a:hover {
-  text-decoration: underline;
+.audio-toggle {
+  text-align: center;
+  margin: 10px 0 20px 0;
+  font-size: 14px;
+}
+
+.audio-toggle label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.05);
+  transition: background 0.2s ease;
+}
+
+.audio-toggle label:hover {
+  background: rgba(0,0,0,0.1);
+}
+
+.audio-toggle input[type="checkbox"] {
+  margin: 0;
 }
 

@@ -102,7 +102,11 @@
 
 function play(sound){
 
-let audio = new Audio("../assets/audio/vowels_fonetix_without_example/" + sound + ".mp3");
+let audioPath = document.getElementById('audio-toggle').checked
+  ? "../assets/audio/vowels_fonetix_with_example/"
+  : "../assets/audio/vowels_fonetix_without_example/";
+
+let audio = new Audio(audioPath + sound + ".mp3");
 
 audio.play();
 
