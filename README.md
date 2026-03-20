@@ -35,14 +35,14 @@ French_vowels/
 ### 1. **Main Version** (`basic/index.html`)
 - Colored circles with text labels over triangles
 
-### 2. **Written Version** (`written/index.html`)
+### 2. **Written Version** (`text/index.html`)
 - Displays vowel names over colored circles with text labels over triangles
 
-### 3. **Emoticons Version** (`emoticons/index.html`)
+### 3. **Emoticons Version** (`emojis/index.html`)
 - Uses Unicode emojis as visual mnemonics over colored circles with text labels over triangles
 - Avoids usage wrights as emojis are free tu use
   
-### 4. **Icons Version** (`icons/index.html`)
+### 4. **Icons Version** (`picrogram/index.html`)
 - Uses PNG pictograms from the `pictograms/` folder
 - **Dynamic loading:** Automatically matches PNG filenames to sound names
 - **Easy customization:** Add or replace PNG files with the same naming convention
