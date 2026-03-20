@@ -2,6 +2,8 @@
 
 An interactive French vowel pronunciation guide with a visual vowel triangle. This project includes multiple versions to support different learning styles and use cases.
 
+![Vowel Triangle Concept](TELL_Triangle_graphèmes-1.jpg)
+
 ## Project Structure
 
 ```
