@@ -64,7 +64,10 @@ The `styles.css` file is organized as follows:
 - ✅ **Touch-optimized** - No touch delay, proper `touch-action` handling
 
 ### Audio
-- ✅ **MP3 pronunciation files** - Located in `sounds/` directory
+- ✅ **MP3 pronunciation files** - From [Fonetix.org](https://fonetix.org/fr/etudier/ressources)
+- ✅ **Two versions available:**
+  - `vowels_fonetix_with_example/` - Includes example words with each vowel
+  - `vowels_fonetix_without_example/` - Vowel sounds only
 - ✅ **Auto-mapped to sounds** - Filenames match the vowel sound names (e.g., `o.mp3`, `a.mp3`)
 
 ### Visual Design
@@ -104,6 +107,12 @@ All PNGs in `pictograms/` should match these sound names exactly:
 - ✅ Firefox (full support)
 - ✅ Safari (full support, including iOS)
 - ✅ Mobile browsers (iOS Safari, Chrome Mobile, etc.)
+
+## Attribution
+
+**Vowel Triangle Concept:** Inspired by [Sophia Smajlovic's work at UNIL](https://wp.unil.ch/ficellesapprendre/sophia-smajlovic-1142/)
+
+**Audio files:** French pronunciation resources from [Fonetix.org - Étudier le français](https://fonetix.org/fr/etudier/ressources)
 
 ## Future Enhancements
 
