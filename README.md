@@ -14,7 +14,7 @@ French_vowels/
 │   ├── audio/
 │   │   ├── vowels_fonetix_with_example/    # MP3 files with example words
 │   │   ├── vowels_fonetix_without_example/ # MP3 files without example words
-│   │   └── sounds/                         # Legacy audio files
+│   │   └── vowels_tts/                     # MP3 files robotic pronounciation
 │   └── images/
 │       └── TELL_Triangle_graphèmes-1.jpg   # Vowel triangle concept image
 ├── basic/
@@ -33,25 +33,19 @@ French_vowels/
 ## Versions
 
 ### 1. **Main Version** (`basic/index.html`)
-- Clean, minimalist design
-- Colored circles with text labels
-- Perfect for learning vowel positions
+- Colored circles with text labels over triangles
 
 ### 2. **Written Version** (`written/index.html`)
-- Displays vowel names and IPA symbols
-- Text-based learning approach
-- Helps with vowel identification
+- Displays vowel names over colored circles with text labels over triangles
 
 ### 3. **Emoticons Version** (`emoticons/index.html`)
-- Uses Unicode emojis as visual mnemonics
-- Emojis are hardcoded in the SVG for simplicity
-- Easy to customize by editing emoji characters directly
-
+- Uses Unicode emojis as visual mnemonics over colored circles with text labels over triangles
+- Avoids usage wrights as emojis are free tu use
+  
 ### 4. **Icons Version** (`icons/index.html`)
 - Uses PNG pictograms from the `pictograms/` folder
 - **Dynamic loading:** Automatically matches PNG filenames to sound names
 - **Easy customization:** Add or replace PNG files with the same naming convention
-- **Graceful fallback:** If a PNG doesn't exist, the colored circle displays instead
 - **File naming:** `pictograms/{sound}.png` (e.g., `pictograms/a.png`, `pictograms/o.png`)
 
 ## CSS Organization
@@ -124,10 +118,3 @@ All PNGs in `pictogram/pictograms/` should match these sound names exactly:
 **Vowel Triangle Concept:** Inspired by [Sophia Smajlovic's work at UNIL](https://wp.unil.ch/ficellesapprendre/sophia-smajlovic-1142/)
 
 **Audio files:** French pronunciation resources from [Fonetix.org - Étudier le français](https://fonetix.org/fr/etudier/ressources)
-
-## Future Enhancements
-
-- Multiple language support (other Romance languages with vowel triangles)
-- Animation on page load
-- Settings/preferences modal for customization
-- Keyboard shortcuts for vowel playback
