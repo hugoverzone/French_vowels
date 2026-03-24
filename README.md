@@ -1,5 +1,7 @@
 # French Vowels Web App
 
+[![Logo](assets/images/logo_EVAM.png)](https://example.com)
+
 An interactive French vowel pronunciation guide with a visual vowel triangle. This project includes multiple versions to support different learning styles and use cases.
 
 ![Vowel Triangle Concept](assets/images/TELL_Triangle_graphèmes-1.jpg)
@@ -120,6 +122,8 @@ All PNGs in `pictogram/pictograms/` should match these sound names exactly:
 - ✅ Mobile browsers (iOS Safari, Chrome Mobile, etc.)
 
 ## Attribution
+
+**Developed by:** [Hugo Verzone](https://github.com/hugoverzone)
 
 **Vowel Triangle Concept:** Inspired by [Sophia Smajlovic's work at UNIL](https://wp.unil.ch/ficellesapprendre/sophia-smajlovic-1142/)
 

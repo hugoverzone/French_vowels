@@ -17,7 +17,7 @@ body {
   background: var(--primary-bg);
   text-align: center;
   margin: 0;
-  padding: 10px;
+  padding: 0 10px 10px 10px;
   line-height: 1.4;
 }
 
@@ -84,7 +84,13 @@ text {
   }
 
   body {
-    padding: 5px;
+    padding: 0 5px 5px 5px;
+  }
+
+  .top-banner {
+    margin-left: -5px;
+    margin-right: -5px;
+    width: calc(100% + 10px);
   }
 }
 
@@ -145,4 +151,25 @@ text {
 .audio-toggle input[type="checkbox"] {
   margin: 0;
 }
+
+.top-banner {
+  background-color: rgb(226,46,64);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;  margin-left: -10px;
+  margin-right: -10px;
+  width: calc(100% + 20px);}
+
+.top-banner img {
+  height: 50px;
+  display: block;
+}
+
+.top-banner h1,
+.top-banner p {
+  margin: 0;
+  color: white;
+}
+
 
