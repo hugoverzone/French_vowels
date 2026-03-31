@@ -6,7 +6,7 @@
   --text-size: 16px;
   --mobile-text-size: 14px;
   --transition-duration: 0.15s;
-  --triangle-padding: 0px; /* space around SVG container */
+  --triangle-padding: 5px; /* space around SVG container */
   --triangle-offset-x: 0px; /* move triangle left/right inside SVG */
   --triangle-offset-y: 0px; /* move triangle up/down inside SVG */
 }
