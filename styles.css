@@ -9,6 +9,7 @@
   --triangle-padding: 5px; /* space around SVG container */
   --triangle-offset-x: 0px; /* move triangle left/right inside SVG */
   --triangle-offset-y: 0px; /* move triangle up/down inside SVG */
+  --triangle-desktop-reserve-height: 260px; /* header/text/footer space on desktop */
 }
 
 * {
@@ -42,12 +43,26 @@ svg {
   margin-bottom: var(--triangle-padding);
   margin-left: var(--triangle-padding);
   margin-right: var(--triangle-padding);
+  width: 100%;
   max-width: 100%;
   height: auto;
   display: block;
   overflow: visible;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Keep the full triangle visible on initial load for desktop viewports. */
+@media (min-width: 769px) {
+  svg {
+    width: min(
+      calc(100vw - (2 * var(--triangle-padding)) - 20px),
+      calc((100dvh - var(--triangle-desktop-reserve-height)) * 0.75)
+    );
+    max-height: calc(100dvh - var(--triangle-desktop-reserve-height));
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
 .triangle-inner {
