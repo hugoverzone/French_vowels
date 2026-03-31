@@ -14,12 +14,6 @@
     </div>
     <h1>Les Voyelles</h1>
     <p>Cliquez sur une voyelle pour l'écouter</p>
-    <div class="audio-toggle">
-      <label>
-        <input type="checkbox" id="audio-toggle">
-        Avec exemples
-      </label>
-    </div>
     <svg viewBox="0 0 300 400" preserveAspectRatio="xMidYMid meet">
       <g class="triangle-inner">
       <!-- lines -->
@@ -100,9 +94,7 @@
     </footer>
     <script>
 function play(sound){
-let audioPath = document.getElementById('audio-toggle').checked
-  ? "../assets/audio/vowels_fonetix_with_example/"
-  : "../assets/audio/vowels_fonetix_without_example/";
+let audioPath = "../assets/audio/vowels_fonetix_without_example/";
 let audio = new Audio(audioPath + sound + ".mp3");
 audio.play();
 }
