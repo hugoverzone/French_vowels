@@ -113,6 +113,11 @@ text {
     padding: 0 5px 5px 5px;
   }
 
+  .top-banner {
+    margin-left: -5px;
+    margin-right: -5px;
+    width: calc(100% + 10px);
+  }
 }
 
 /* Additional utility classes for future enhancements */
@@ -173,6 +178,24 @@ text {
   margin: 0;
 }
 
-/* Removed EVAM logo and associated styles */
+.top-banner {
+  background-color: rgb(226,46,64);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;  margin-left: -10px;
+  margin-right: -10px;
+  width: calc(100% + 20px);}
+
+.top-banner img {
+  height: 50px;
+  display: block;
+}
+
+.top-banner h1,
+.top-banner p {
+  margin: 0;
+  color: white;
+}
 
 
