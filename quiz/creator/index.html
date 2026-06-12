@@ -57,6 +57,10 @@
                                         <span id="shareUrlOutput">No URL yet.</span>
                                     </div>
                                     <div>
+                                        <strong>Extracted token</strong>
+                                        <span id="extractedTokenOutput">None</span>
+                                    </div>
+                                    <div>
                                         <strong>Status</strong>
                                         <span id="status" class="status">Ready.</span>
                                     </div>
@@ -109,6 +113,7 @@
                         baseUrl: document.getElementById('baseUrl'),
                         payloadOutput: document.getElementById('payloadOutput'),
                         shareUrlOutput: document.getElementById('shareUrlOutput'),
+                        extractedTokenOutput: document.getElementById('extractedTokenOutput'),
                         status: document.getElementById('status'),
                         rowsSummary: document.getElementById('rowsSummary'),
                         rowsTableWrap: document.getElementById('rowsTableWrap'),
@@ -230,6 +235,21 @@
                             : '<span class="status error">Decoded rows did not map back to words.</span>';
                     }
 
+                    function renderDecodedWordsFromSource(sourceUrl, rowToWord) {
+                        const payload = extractTokenFromUrl(sourceUrl);
+                        const rows = decodeQrStringToList(payload);
+
+                        elements.extractedTokenOutput.textContent = payload || 'None';
+
+                        if (!payload) {
+                            elements.decodedSummary.textContent = 'No token found in the provided URL.';
+                            elements.decodedWords.innerHTML = '';
+                            return;
+                        }
+
+                        renderDecodedWords(rows, rowToWord);
+                    }
+
                     function renderQrCode(url) {
                         elements.qrcode.innerHTML = '';
                         elements.qrHint.textContent = url ? 'QR code ready.' : 'No QR code yet.';
@@ -262,7 +282,7 @@
 
                         try {
                             setStatus('Loading lexicon and resolving rows...');
-                            const { wordToRow } = await loadLexiqueMaps();
+                            const { wordToRow, rowToWord } = await loadLexiqueMaps();
 
                             const matches = [];
                             const missing = [];
@@ -279,11 +299,12 @@
 
                             const payload = encodeListToQrString(matches.map((entry) => entry.row));
                             const baseTarget = elements.baseUrl.value.trim() || getTrianglePageUrlFromCurrentPage();
-                            const finalUrl = payload ? generateQrUrl(payload, baseTarget) : '';
+                            const finalUrl = payload ? generateQrUrl(payload, baseTarget).toUpperCase() : '';
 
                             renderRowsTable(matches);
                             elements.payloadOutput.textContent = payload || 'No payload was produced.';
                             elements.shareUrlOutput.textContent = finalUrl || 'No URL was produced.';
+                            renderDecodedWordsFromSource(finalUrl, rowToWord);
 
                             if (missing.length) {
                                 setStatus(`Resolved ${matches.length} word(s). Missing: ${missing.join(', ')}`, true);
@@ -304,18 +325,10 @@
                     async function decodeCurrentUrl() {
                         try {
                             const { rowToWord } = await loadLexiqueMaps();
-                            const payload = extractTokenFromUrl(window.location.href);
-                            const rows = decodeQrStringToList(payload);
-
-                            if (!payload) {
-                                elements.decodedSummary.textContent = 'No token found in the current URL.';
-                                elements.decodedWords.innerHTML = '';
-                                return;
-                            }
-
-                            renderDecodedWords(rows, rowToWord);
+                            renderDecodedWordsFromSource(window.location.href, rowToWord);
                         } catch (error) {
                             elements.decodedSummary.textContent = error.message;
+                            elements.extractedTokenOutput.textContent = 'None';
                             elements.decodedWords.innerHTML = '';
                         }
                     }

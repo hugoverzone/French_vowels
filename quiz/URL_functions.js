@@ -196,7 +196,7 @@ export function generateQrUrl(token, domain = typeof window !== 'undefined' ? wi
 
 	const url = new URL(resolvedBaseUrl, typeof window !== 'undefined' ? window.location.href : resolvedBaseUrl);
 	url.searchParams.set('TOKEN', normalizedToken);
-	return url.toString().toUpperCase();
+	return url.toString();
 }
 
 export function extractTokenFromUrl(sourceUrl = typeof window !== 'undefined' ? window.location.href : '') {
@@ -205,21 +205,24 @@ export function extractTokenFromUrl(sourceUrl = typeof window !== 'undefined' ? 
 	}
 
 	const url = new URL(sourceUrl, sourceUrl);
-	const hashToken = url.hash.startsWith('#') ? decodeURIComponent(url.hash.slice(1).trim()) : '';
-	if (hashToken) {
-		return hashToken.toUpperCase();
-	}
-
 	const queryToken = url.searchParams.get('TOKEN') || url.searchParams.get('token');
 	const queryValue = queryToken ? queryToken.trim().toUpperCase() : '';
 	if (/^[0-9A-Z $%*+\-./:]+$/.test(queryValue)) {
 		return queryValue;
 	}
 
+	const hashToken = url.hash.startsWith('#') ? decodeURIComponent(url.hash.slice(1).trim()) : '';
+	if (hashToken) {
+		return hashToken.toUpperCase();
+	}
+
 	const pathSegments = url.pathname.split('/').filter(Boolean);
-	const pathToken = pathSegments[pathSegments.length - 1]?.trim().toUpperCase() || '';
-	if (/^[0-9A-Z $%*+\-./:]+$/.test(pathToken)) {
-		return pathToken;
+	const lastSegment = pathSegments[pathSegments.length - 1] || '';
+	if (lastSegment && !/\.html?$/i.test(lastSegment)) {
+		const pathToken = lastSegment.trim().toUpperCase();
+		if (/^[0-9A-Z $%*+\-./:]+$/.test(pathToken)) {
+			return pathToken;
+		}
 	}
 
 	return '';
