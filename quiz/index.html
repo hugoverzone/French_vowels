@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,26 +17,25 @@
     </div>
 
     <section class="exercise-panel" id="exercise-panel">
-      <h2>Exercise mode</h2>
-      <p id="exercise-instructions">Open this page with a URL that contains <strong>TOKEN=...</strong> to start the word-by-word exercise.</p>
+      <h2>Mode exercice</h2>
       <div class="exercise-meta">
         <div class="exercise-card">
-          <strong>Current word</strong>
-          <div class="exercise-word" id="exercise-word">Waiting for token...</div>
+          <strong>Mot actuel</strong>
+          <div class="exercise-word" id="exercise-word">En attente du jeton...</div>
         </div>
         <div class="exercise-card">
-          <strong>Phonetic clue</strong>
-          <div class="exercise-phonetic" id="exercise-phonetic">The second CSV column will appear here.</div>
+          <strong>Indice phonétique</strong>
+          <div class="exercise-phonetic" id="exercise-phonetic">La deuxième colonne du CSV apparaîtra ici.</div>
         </div>
         <div class="exercise-card">
-          <strong>Progress</strong>
+          <strong>Progression</strong>
           <div class="exercise-progress" id="exercise-progress">0 / 0</div>
         </div>
       </div>
       <div class="exercise-feedback" id="exercise-feedback" aria-live="polite"></div>
       <div class="exercise-footer">
-        <div class="exercise-progress" id="exercise-score">Score: 0 correct</div>
-        <button class="exercise-button secondary hidden" id="exercise-next" type="button">Next word</button>
+        <div class="exercise-progress" id="exercise-score">Réussites : 0</div>
+        <button class="exercise-button secondary hidden" id="exercise-next" type="button">Mot suivant</button>
       </div>
     </section>
 
@@ -103,7 +102,6 @@ const VOWEL_SOUNDS = ["o", "oe", "è", "eu", "au", "é", "ou", "u", "i", "a", "a
 const elements = {
   audioToggle: document.getElementById('audio-toggle'),
   exercisePanel: document.getElementById('exercise-panel'),
-  exerciseInstructions: document.getElementById('exercise-instructions'),
   exerciseWord: document.getElementById('exercise-word'),
   exercisePhonetic: document.getElementById('exercise-phonetic'),
   exerciseProgress: document.getElementById('exercise-progress'),
@@ -147,7 +145,7 @@ async function loadLexiqueRows() {
     lexiquePromise = fetch(CSV_PATH)
       .then((response) => {
         if (!response.ok) {
-          throw new Error(`Unable to load ${CSV_PATH}`);
+          throw new Error(`Impossible de charger ${CSV_PATH}`);
         }
 
         return response.text();
@@ -230,10 +228,10 @@ function renderExerciseItem() {
   const item = exerciseState.items[exerciseState.index];
 
   if (!item) {
-    elements.exerciseWord.textContent = 'No exercise loaded.';
-    elements.exercisePhonetic.textContent = 'Open a URL with TOKEN=... to start.';
+    elements.exerciseWord.textContent = 'Aucun exercice chargé.';
+    elements.exercisePhonetic.textContent = 'Ouvrez une URL contenant TOKEN=... pour commencer.';
     elements.exerciseProgress.textContent = '0 / 0';
-    elements.exerciseScore.textContent = 'Score: 0 correct';
+    elements.exerciseScore.textContent = 'Réussites : 0';
     elements.exerciseNext.classList.add('hidden');
     setExerciseFeedback('', '');
     return;
@@ -242,24 +240,24 @@ function renderExerciseItem() {
   elements.exerciseWord.textContent = item.word;
   elements.exercisePhonetic.textContent = item.phonetic;
   elements.exerciseProgress.textContent = `${exerciseState.index + 1} / ${exerciseState.items.length}`;
-  elements.exerciseScore.textContent = `Score: ${exerciseState.correct} correct`;
+  elements.exerciseScore.textContent = `Réussites : ${exerciseState.correct}`;
   elements.exerciseNext.classList.add('hidden');
 
   if (item.targetSound) {
-    setExerciseFeedback('Click the vowel button that matches the first sound you hear in the word.', '');
+    setExerciseFeedback("Cliquez sur la voyelle qui correspond au premier son que vous entendez dans le mot.", '');
   } else {
-    setExerciseFeedback('No vowel sound could be inferred for this row. Use Next to continue.', 'incorrect');
+    setExerciseFeedback("Aucun son vocalique n'a pu être déduit pour cette ligne. Utilisez Mot suivant pour continuer.", 'incorrect');
     elements.exerciseNext.classList.remove('hidden');
   }
 }
 
 function finishExercise() {
-  elements.exerciseWord.textContent = 'Exercise complete';
-  elements.exercisePhonetic.textContent = 'All requested rows have been shown.';
+  elements.exerciseWord.textContent = 'Exercice terminé';
+  elements.exercisePhonetic.textContent = 'Toutes les lignes demandées ont été affichées.';
   elements.exerciseProgress.textContent = `${exerciseState.items.length} / ${exerciseState.items.length}`;
-  elements.exerciseScore.textContent = `Score: ${exerciseState.correct} correct`;
+  elements.exerciseScore.textContent = `Réussites : ${exerciseState.correct}`;
   elements.exerciseNext.classList.add('hidden');
-  setExerciseFeedback('Reload with a new TOKEN=... payload to play again.', 'correct');
+  setExerciseFeedback('Rechargez la page avec un nouveau jeton TOKEN=... pour rejouer.', 'correct');
 }
 
 function advanceExercise() {
@@ -282,15 +280,15 @@ function handleVowelSelection(sound) {
   }
 
   if (!item.targetSound) {
-    setExerciseFeedback('This row has no target sound. Use Next to continue.', 'incorrect');
+    setExerciseFeedback('Cette ligne n’a pas de son cible. Utilisez Mot suivant pour continuer.', 'incorrect');
     return;
   }
 
   if (sound === item.targetSound) {
     exerciseState.correct += 1;
     exerciseState.locked = true;
-    setExerciseFeedback(`Correct. ${item.word} maps to ${item.targetSound}.`, 'correct');
-    elements.exerciseScore.textContent = `Score: ${exerciseState.correct} correct`;
+    setExerciseFeedback(`Bien joué. ${item.word} correspond au son ${item.targetSound}.`, 'correct');
+    elements.exerciseScore.textContent = `Réussites : ${exerciseState.correct}`;
     elements.exerciseNext.classList.remove('hidden');
     window.setTimeout(() => {
       if (exerciseState.locked) {
@@ -300,7 +298,7 @@ function handleVowelSelection(sound) {
     return;
   }
 
-  setExerciseFeedback(`Not quite. Try again for ${item.word}.`, 'incorrect');
+  setExerciseFeedback(`Pas tout à fait. Réessayez pour ${item.word}.`, 'incorrect');
 }
 
 async function initExercise() {
@@ -334,11 +332,11 @@ async function initExercise() {
       .filter(Boolean);
 
     if (!exerciseState.items.length) {
-      elements.exerciseWord.textContent = 'No matching rows found.';
-      elements.exercisePhonetic.textContent = 'Check the token in the URL.';
+      elements.exerciseWord.textContent = 'Aucune ligne correspondante trouvée.';
+      elements.exercisePhonetic.textContent = 'Vérifiez le jeton dans l’URL.';
       elements.exerciseProgress.textContent = '0 / 0';
-      elements.exerciseScore.textContent = 'Score: 0 correct';
-      setExerciseFeedback('The provided token did not decode to any CSV entries.', 'incorrect');
+      elements.exerciseScore.textContent = 'Réussites : 0';
+      setExerciseFeedback('Le jeton fourni ne correspond à aucune entrée du CSV.', 'incorrect');
       elements.exerciseNext.classList.add('hidden');
       return;
     }
@@ -349,8 +347,8 @@ async function initExercise() {
       button.addEventListener('click', () => handleVowelSelection(button.dataset.sound || ''));
     });
   } catch (error) {
-    elements.exerciseWord.textContent = 'Unable to start exercise.';
-    elements.exercisePhonetic.textContent = 'CSV loading failed.';
+    elements.exerciseWord.textContent = "Impossible de démarrer l’exercice.";
+    elements.exercisePhonetic.textContent = 'Le chargement du CSV a échoué.';
     setExerciseFeedback(error.message, 'incorrect');
   }
 }

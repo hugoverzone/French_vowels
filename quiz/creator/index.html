@@ -2,11 +2,11 @@
 
 <!-- convert URL into qrcode -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lexique Row QR Builder</title>
+    <title>Générateur QR des lignes du lexique</title>
     <link rel="stylesheet" href="../../styles.css">
 </head>
 
@@ -17,65 +17,65 @@
                 <main class="page">
                     <section class="hero">
                         <div class="eyebrow">Lexique phonétique</div>
-                        <h1>Build a Base45 QR URL from French words, then decode it back into words later.</h1>
+                        <h1>Générez une URL QR Base45 à partir de mots français, puis décodez-la ensuite en mots.</h1>
                         <p class="subhead">
-                            This page looks up each word in the first column of <strong>../lexique_data/lexique_phonetique.csv</strong>,
-                            compresses the matching row numbers into a compact Base45 token, and renders a QR code for the final link.
-                            If the page is opened with that token already present, it will decode the numbers and recover the words automatically.
+                            Cette page recherche chaque mot dans la première colonne de <strong>../lexique_data/lexique_phonetique.csv</strong>,
+                            compresse les numéros de ligne correspondants dans un jeton Base45 compact, puis génère un QR code pour le lien final.
+                            Si la page est ouverte avec ce jeton déjà présent, elle décode les nombres et retrouve automatiquement les mots.
                         </p>
                     </section>
 
                     <section class="grid">
                         <div class="card">
                             <div class="card-inner">
-                                <h2>Encode words</h2>
-                                <p>Separate words with commas. Matching is exact against the first column in the CSV.</p>
+                                <h2>Encoder les mots</h2>
+                                <p>Séparez les mots par des virgules. La correspondance est exacte avec la première colonne du CSV.</p>
 
                                 <div class="row">
-                                    <label for="frenchWords">French words</label>
-                                    <textarea id="frenchWords" placeholder="ex: pollacks, marge, office"></textarea>
+                                    <label for="frenchWords">Mots français</label>
+                                    <textarea id="frenchWords" placeholder="ex. pollacks, marge, office"></textarea>
                                 </div>
 
                                 <div class="row">
-                                    <label for="baseUrl">Triangle page URL</label>
+                                    <label for="baseUrl">URL de la page triangle</label>
                                     <input type="text" id="baseUrl" placeholder="../index.html">
                                 </div>
 
                                 <div class="actions">
-                                    <button class="primary" id="buildButton">Resolve words and build QR URL</button>
-                                    <button class="secondary" id="decodeButton">Decode current URL</button>
-                                    <button class="soft" id="fillCurrentButton">Use this page as base URL</button>
+                                    <button class="primary" id="buildButton">Résoudre les mots et créer l’URL QR</button>
+                                    <button class="secondary" id="decodeButton">Décoder l’URL actuelle</button>
+                                    <button class="soft" id="fillCurrentButton">Utiliser cette page comme URL de base</button>
                                 </div>
 
                                 <div class="meta">
                                     <div>
-                                        <strong>Compact token</strong>
-                                        <span id="payloadOutput">No payload yet.</span>
+                                        <strong>Jeton compact</strong>
+                                        <span id="payloadOutput">Aucun jeton pour le moment.</span>
                                     </div>
                                     <div>
-                                        <strong>Final share URL</strong>
-                                        <span id="shareUrlOutput">No URL yet.</span>
+                                        <strong>URL de partage finale</strong>
+                                        <span id="shareUrlOutput">Aucune URL pour le moment.</span>
                                     </div>
                                     <div>
-                                        <strong>Extracted token</strong>
-                                        <span id="extractedTokenOutput">None</span>
+                                        <strong>Jeton extrait</strong>
+                                        <span id="extractedTokenOutput">Aucun</span>
                                     </div>
                                     <div>
-                                        <strong>Status</strong>
-                                        <span id="status" class="status">Ready.</span>
+                                        <strong>État</strong>
+                                        <span id="status" class="status">Prêt.</span>
                                     </div>
                                 </div>
 
                                 <div class="output">
                                     <div class="panel-surface">
-                                        <h2>Resolved rows</h2>
-                                        <div id="rowsSummary" class="status">Enter words and resolve them.</div>
+                                        <h2>Lignes résolues</h2>
+                                        <div id="rowsSummary" class="status">Saisissez des mots pour les résoudre.</div>
                                         <div id="rowsTableWrap"></div>
                                     </div>
 
                                     <div class="panel-surface">
-                                        <h2>Recovered words</h2>
-                                        <div id="decodedSummary" class="status">If the URL already contains a payload, the words will appear here.</div>
+                                        <h2>Mots récupérés</h2>
+                                        <div id="decodedSummary" class="status">Si l’URL contient déjà un jeton, les mots apparaîtront ici.</div>
                                         <div id="decodedWords" class="word-list"></div>
                                     </div>
                                 </div>
@@ -84,12 +84,12 @@
 
                         <div class="card">
                             <div class="card-inner">
-                                <h2>QR code</h2>
-                                <p>The code is generated from the final URL, which includes the compact uppercase Base45 token.</p>
+                                <h2>Code QR</h2>
+                                <p>Le code est généré à partir de l’URL finale, qui inclut le jeton Base45 compact en majuscules.</p>
                             </div>
                             <div class="qr-box">
                                 <div id="qrcode"></div>
-                                <div id="qrHint" class="status">No QR code yet.</div>
+                                <div id="qrHint" class="status">Aucun code QR pour le moment.</div>
                             </div>
                         </div>
                     </section>
@@ -161,7 +161,7 @@
                             lexiquePromise = fetch(CSV_PATH)
                                 .then((response) => {
                                     if (!response.ok) {
-                                        throw new Error(`Unable to load ${CSV_PATH}`);
+                                        throw new Error(`Impossible de charger ${CSV_PATH}`);
                                     }
                                     return response.text();
                                 })
@@ -189,7 +189,7 @@
                     function renderRowsTable(entries) {
                         if (!entries.length) {
                             elements.rowsTableWrap.innerHTML = '';
-                            elements.rowsSummary.textContent = 'No words matched the CSV.';
+                            elements.rowsSummary.textContent = 'Aucun mot ne correspond au CSV.';
                             return;
                         }
 
@@ -203,14 +203,14 @@
                             `)
                             .join('');
 
-                        elements.rowsSummary.textContent = `${entries.length} word(s) resolved.`;
+                        elements.rowsSummary.textContent = `${entries.length} mot(s) résolu(s).`;
                         elements.rowsTableWrap.innerHTML = `
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Word</th>
-                                        <th>Row</th>
-                                        <th>Result</th>
+                                        <th>Mot</th>
+                                        <th>Ligne</th>
+                                        <th>Résultat</th>
                                     </tr>
                                 </thead>
                                 <tbody>${rows}</tbody>
@@ -220,7 +220,7 @@
 
                     function renderDecodedWords(rows, rowToWord) {
                         if (!rows.length) {
-                            elements.decodedSummary.textContent = 'No numbers decoded from the URL.';
+                            elements.decodedSummary.textContent = 'Aucun nombre n’a été décodé depuis l’URL.';
                             elements.decodedWords.innerHTML = '';
                             return;
                         }
@@ -229,20 +229,20 @@
                             .map((row) => rowToWord.get(row))
                             .filter(Boolean);
 
-                        elements.decodedSummary.textContent = `${rows.length} number(s) decoded from the URL.`;
+                        elements.decodedSummary.textContent = `${rows.length} nombre(s) décodé(s) depuis l’URL.`;
                         elements.decodedWords.innerHTML = words.length
                             ? words.map((word) => `<span class="pill">${word}</span>`).join('')
-                            : '<span class="status error">Decoded rows did not map back to words.</span>';
+                            : '<span class="status error">Les lignes décodées ne correspondent à aucun mot.</span>';
                     }
 
                     function renderDecodedWordsFromSource(sourceUrl, rowToWord) {
                         const payload = extractTokenFromUrl(sourceUrl);
                         const rows = decodeQrStringToList(payload);
 
-                        elements.extractedTokenOutput.textContent = payload || 'None';
+                        elements.extractedTokenOutput.textContent = payload || 'Aucun';
 
                         if (!payload) {
-                            elements.decodedSummary.textContent = 'No token found in the provided URL.';
+                            elements.decodedSummary.textContent = 'Aucun jeton trouvé dans l’URL fournie.';
                             elements.decodedWords.innerHTML = '';
                             return;
                         }
@@ -252,7 +252,7 @@
 
                     function renderQrCode(url) {
                         elements.qrcode.innerHTML = '';
-                        elements.qrHint.textContent = url ? 'QR code ready.' : 'No QR code yet.';
+                        elements.qrHint.textContent = url ? 'Code QR prêt.' : 'Aucun code QR pour le moment.';
 
                         if (!url) {
                             return;
@@ -272,16 +272,16 @@
                         const words = normalizeWords(elements.frenchWords.value);
 
                         if (!words.length) {
-                            setStatus('Add at least one word.', true);
+                            setStatus('Ajoutez au moins un mot.', true);
                             renderRowsTable([]);
-                            elements.payloadOutput.textContent = 'No payload yet.';
-                            elements.shareUrlOutput.textContent = 'No URL yet.';
+                            elements.payloadOutput.textContent = 'Aucun jeton pour le moment.';
+                            elements.shareUrlOutput.textContent = 'Aucune URL pour le moment.';
                             renderQrCode('');
                             return;
                         }
 
                         try {
-                            setStatus('Loading lexicon and resolving rows...');
+                            setStatus('Chargement du lexique et résolution des lignes...');
                             const { wordToRow, rowToWord } = await loadLexiqueMaps();
 
                             const matches = [];
@@ -290,7 +290,7 @@
                             words.forEach((word) => {
                                 const row = wordToRow.get(word);
                                 if (row) {
-                                    matches.push({ word, row, status: 'Matched exact first-column entry' });
+                                    matches.push({ word, row, status: 'Correspondance exacte à la première colonne' });
                                     return;
                                 }
 
@@ -302,22 +302,22 @@
                             const finalUrl = payload ? generateQrUrl(payload, baseTarget).toUpperCase() : '';
 
                             renderRowsTable(matches);
-                            elements.payloadOutput.textContent = payload || 'No payload was produced.';
-                            elements.shareUrlOutput.textContent = finalUrl || 'No URL was produced.';
+                            elements.payloadOutput.textContent = payload || 'Aucun jeton n’a été produit.';
+                            elements.shareUrlOutput.textContent = finalUrl || 'Aucune URL n’a été produite.';
                             renderDecodedWordsFromSource(finalUrl, rowToWord);
 
                             if (missing.length) {
-                                setStatus(`Resolved ${matches.length} word(s). Missing: ${missing.join(', ')}`, true);
+                                setStatus(`Résolu ${matches.length} mot(s). Manquants : ${missing.join(', ')}`, true);
                             } else {
-                                setStatus(`Resolved ${matches.length} word(s) and built the share URL.`);
+                                setStatus(`Résolu ${matches.length} mot(s) et créé l’URL de partage.`);
                             }
 
                             renderQrCode(finalUrl);
                         } catch (error) {
                             setStatus(error.message, true);
                             renderRowsTable([]);
-                            elements.payloadOutput.textContent = 'No payload yet.';
-                            elements.shareUrlOutput.textContent = 'No URL yet.';
+                            elements.payloadOutput.textContent = 'Aucun jeton pour le moment.';
+                            elements.shareUrlOutput.textContent = 'Aucune URL pour le moment.';
                             renderQrCode('');
                         }
                     }
@@ -328,7 +328,7 @@
                             renderDecodedWordsFromSource(window.location.href, rowToWord);
                         } catch (error) {
                             elements.decodedSummary.textContent = error.message;
-                            elements.extractedTokenOutput.textContent = 'None';
+                            elements.extractedTokenOutput.textContent = 'Aucun';
                             elements.decodedWords.innerHTML = '';
                         }
                     }
