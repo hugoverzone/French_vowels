@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Le Triangle des Voyelles</title>
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body>
+    <h1>Les Voyelles</h1>
+    <p>Cliquez sur une voyelle pour l'écouter</p>
+    <div class="audio-toggle">
+      <label>
+        <input type="checkbox" id="audio-toggle">
+        Avec exemples
+      </label>
+    </div>
+
+    <section class="exercise-panel" id="exercise-panel">
+      <h2>Exercise mode</h2>
+      <p id="exercise-instructions">Open this page with a URL that contains <strong>TOKEN=...</strong> to start the word-by-word exercise.</p>
+      <div class="exercise-meta">
+        <div class="exercise-card">
+          <strong>Current word</strong>
+          <div class="exercise-word" id="exercise-word">Waiting for token...</div>
+        </div>
+        <div class="exercise-card">
+          <strong>Phonetic clue</strong>
+          <div class="exercise-phonetic" id="exercise-phonetic">The second CSV column will appear here.</div>
+        </div>
+        <div class="exercise-card">
+          <strong>Progress</strong>
+          <div class="exercise-progress" id="exercise-progress">0 / 0</div>
+        </div>
+      </div>
+      <div class="exercise-feedback" id="exercise-feedback" aria-live="polite"></div>
+      <div class="exercise-footer">
+        <div class="exercise-progress" id="exercise-score">Score: 0 correct</div>
+        <button class="exercise-button secondary hidden" id="exercise-next" type="button">Next word</button>
+      </div>
+    </section>
+
+    <svg viewBox="0 0 300 400" preserveAspectRatio="xMidYMid meet">
+      <g class="triangle-inner">
+      <line x1="150" y1="80" x2="30" y2="370" class="guide"/>
+      <line x1="150" y1="80" x2="270" y2="370" class="guide"/>
+      <line x1="30" y1="370" x2="270" y2="370" class="guide"/>
+      <line x1="150" y1="80" x2="150" y2="370" class="guide" />
+      <line x1="100" y1="195" x2="200" y2="195" class="guide" />
+      <line x1="70" y1="275" x2="230" y2="275" class="guide" />
+      <g onclick="play('o')" class="vowel">
+        <circle cx="100" cy="195" r="20" fill="#5dade2"/>
+      </g>
+      <g onclick="play('oe')" class="vowel">
+        <circle cx="150" cy="195" r="20" fill="#7ed957"/>
+      </g>
+      <g onclick="play('è')" class="vowel">
+        <circle cx="200" cy="195" r="20" fill="#ff7eb9"/>
+      </g>
+      <g onclick="play('eu')" class="vowel">
+        <circle cx="150" cy="275" r="20" fill="#00b894"/>
+      </g>
+      <g onclick="play('au')" class="vowel">
+        <circle cx="70" cy="275" r="20" fill="#4a6bd6"/>
+      </g>
+      <g onclick="play('é')" class="vowel">
+        <circle cx="230" cy="275" r="20" fill="#ff6f3c"/>
+      </g>
+      <g onclick="play('ou')" class="vowel">
+        <circle cx="30" cy="370" r="20" fill="#2ec4b6"/>
+      </g>
+      <g onclick="play('u')" class="vowel">
+        <circle cx="150" cy="370" r="20" fill="#ffd93d"/>
+      </g>
+      <g onclick="play('i')" class="vowel">
+        <circle cx="270" cy="370" r="20" fill="#ff4d4d"/>
+      </g>
+      <g onclick="play('a')" class="vowel">
+        <circle cx="150" cy="80" r="20" fill="#9b59b6"/>
+      </g>
+      <g onclick="play('an')" class="vowel">
+        <circle cx="150" cy="30" r="20" fill="#e6a8d7"/>
+      </g>
+      <g onclick="play('on')" class="vowel">
+        <circle cx="60" cy="130" r="20" fill="#adceea"/>
+      </g>
+      <g onclick="play('in')" class="vowel">
+        <circle cx="240" cy="130" r="20" fill="#f3b795"/>
+      </g>
+          </g>
+    </svg>
+    <footer class="attribution">
+      <p>Développé par <a href="https://hugo.verzone.ch" target="_blank" rel="noopener noreferrer">Hugo Verzone</a> | 
+        Concept du triangle des voyelles par <a href="https://wp.unil.ch/ficellesapprendre/sophia-smajlovic-1142/" target="_blank" rel="noopener noreferrer">Sophia Smajlovic (UNIL)</a> | 
+        Audio de prononciation provenant de <a href="https://fonetix.org/fr/etudier/ressources" target="_blank" rel="noopener noreferrer">Fonetix.org</a></p>
+    </footer>
+    <script type="module">
+import { decodeQrStringToList, extractTokenFromUrl } from "./URL_functions.js";
+
+const CSV_PATH = "./lexique_data/lexique_phonetique.csv";
+const VOWEL_SOUNDS = ["o", "oe", "è", "eu", "au", "é", "ou", "u", "i", "a", "an", "on", "in"];
+
+const elements = {
+  audioToggle: document.getElementById('audio-toggle'),
+  exercisePanel: document.getElementById('exercise-panel'),
+  exerciseInstructions: document.getElementById('exercise-instructions'),
+  exerciseWord: document.getElementById('exercise-word'),
+  exercisePhonetic: document.getElementById('exercise-phonetic'),
+  exerciseProgress: document.getElementById('exercise-progress'),
+  exerciseScore: document.getElementById('exercise-score'),
+  exerciseFeedback: document.getElementById('exercise-feedback'),
+  exerciseNext: document.getElementById('exercise-next'),
+  triangle: document.querySelector('svg'),
+  vowelButtons: [...document.querySelectorAll('.vowel')]
+};
+
+let lexiquePromise = null;
+const exerciseState = {
+  items: [],
+  index: 0,
+  correct: 0,
+  locked: false
+};
+
+function play(sound) {
+  const audioPath = elements.audioToggle.checked
+    ? "../assets/audio/vowels_fonetix_with_example/"
+    : "../assets/audio/vowels_fonetix_without_example/";
+
+  const audio = new Audio(audioPath + sound + ".mp3");
+  audio.play();
+}
+
+window.play = play;
+
+elements.vowelButtons.forEach((button, index) => {
+  button.dataset.sound = VOWEL_SOUNDS[index] || '';
+});
+
+function parseCsvRow(line) {
+  const [word = '', phonetic = '', pronunciation = ''] = line.split(',').map((part) => part.trim());
+  return { word, phonetic, pronunciation };
+}
+
+async function loadLexiqueRows() {
+  if (!lexiquePromise) {
+    lexiquePromise = fetch(CSV_PATH)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Unable to load ${CSV_PATH}`);
+        }
+
+        return response.text();
+      })
+      .then((text) => {
+        const rowToEntry = new Map();
+        const wordToRow = new Map();
+        const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+
+        lines.forEach((line, index) => {
+          const entry = parseCsvRow(line);
+          const rowNumber = index + 1;
+          rowToEntry.set(rowNumber, entry);
+
+          if (!wordToRow.has(entry.word)) {
+            wordToRow.set(entry.word, rowNumber);
+          }
+        });
+
+        return { rowToEntry, wordToRow };
+      });
+  }
+
+  return lexiquePromise;
+}
+
+function inferSoundFromPhonetic(phoneticCode) {
+  if (!phoneticCode) {
+    return '';
+  }
+
+  const patterns = [
+    ['an', 'an'],
+    ['on', 'on'],
+    ['in', 'in'],
+    ['eu', 'eu'],
+    ['oe', 'oe'],
+    ['au', 'au'],
+    ['@', 'an'],
+    ['§', 'on'],
+    ['5', 'in'],
+    ['°', 'eu'],
+    ['E', 'è'],
+    ['e', 'é'],
+    ['O', 'o'],
+    ['o', 'o'],
+    ['u', 'u'],
+    ['i', 'i'],
+    ['a', 'a']
+  ];
+
+  for (let index = 0; index < phoneticCode.length; index += 1) {
+    const slice = phoneticCode.slice(index, index + 2);
+    const oneChar = phoneticCode[index];
+
+    for (const [token, sound] of patterns) {
+      if (token.length === 2 && slice === token) {
+        return sound;
+      }
+
+      if (token.length === 1 && oneChar === token) {
+        return sound;
+      }
+    }
+  }
+
+  return '';
+}
+
+function setExerciseFeedback(message, tone = '') {
+  elements.exerciseFeedback.textContent = message;
+  elements.exerciseFeedback.classList.remove('correct', 'incorrect');
+
+  if (tone) {
+    elements.exerciseFeedback.classList.add(tone);
+  }
+}
+
+function renderExerciseItem() {
+  const item = exerciseState.items[exerciseState.index];
+
+  if (!item) {
+    elements.exerciseWord.textContent = 'No exercise loaded.';
+    elements.exercisePhonetic.textContent = 'Open a URL with TOKEN=... to start.';
+    elements.exerciseProgress.textContent = '0 / 0';
+    elements.exerciseScore.textContent = 'Score: 0 correct';
+    elements.exerciseNext.classList.add('hidden');
+    setExerciseFeedback('', '');
+    return;
+  }
+
+  elements.exerciseWord.textContent = item.word;
+  elements.exercisePhonetic.textContent = item.phonetic;
+  elements.exerciseProgress.textContent = `${exerciseState.index + 1} / ${exerciseState.items.length}`;
+  elements.exerciseScore.textContent = `Score: ${exerciseState.correct} correct`;
+  elements.exerciseNext.classList.add('hidden');
+
+  if (item.targetSound) {
+    setExerciseFeedback('Click the vowel button that matches the first sound you hear in the word.', '');
+  } else {
+    setExerciseFeedback('No vowel sound could be inferred for this row. Use Next to continue.', 'incorrect');
+    elements.exerciseNext.classList.remove('hidden');
+  }
+}
+
+function finishExercise() {
+  elements.exerciseWord.textContent = 'Exercise complete';
+  elements.exercisePhonetic.textContent = 'All requested rows have been shown.';
+  elements.exerciseProgress.textContent = `${exerciseState.items.length} / ${exerciseState.items.length}`;
+  elements.exerciseScore.textContent = `Score: ${exerciseState.correct} correct`;
+  elements.exerciseNext.classList.add('hidden');
+  setExerciseFeedback('Reload with a new TOKEN=... payload to play again.', 'correct');
+}
+
+function advanceExercise() {
+  exerciseState.index += 1;
+  exerciseState.locked = false;
+
+  if (exerciseState.index >= exerciseState.items.length) {
+    finishExercise();
+    return;
+  }
+
+  renderExerciseItem();
+}
+
+function handleVowelSelection(sound) {
+  const item = exerciseState.items[exerciseState.index];
+
+  if (!item || exerciseState.locked) {
+    return;
+  }
+
+  if (!item.targetSound) {
+    setExerciseFeedback('This row has no target sound. Use Next to continue.', 'incorrect');
+    return;
+  }
+
+  if (sound === item.targetSound) {
+    exerciseState.correct += 1;
+    exerciseState.locked = true;
+    setExerciseFeedback(`Correct. ${item.word} maps to ${item.targetSound}.`, 'correct');
+    elements.exerciseScore.textContent = `Score: ${exerciseState.correct} correct`;
+    elements.exerciseNext.classList.remove('hidden');
+    window.setTimeout(() => {
+      if (exerciseState.locked) {
+        advanceExercise();
+      }
+    }, 700);
+    return;
+  }
+
+  setExerciseFeedback(`Not quite. Try again for ${item.word}.`, 'incorrect');
+}
+
+async function initExercise() {
+  const payload = extractTokenFromUrl(window.location.href);
+
+  if (!payload) {
+    elements.exercisePanel.classList.add('hidden');
+    return;
+  }
+
+  try {
+    const rows = decodeQrStringToList(payload);
+    const { rowToEntry } = await loadLexiqueRows();
+
+    exerciseState.items = rows
+      .map((row) => {
+        const entry = rowToEntry.get(row);
+
+        if (!entry) {
+          return null;
+        }
+
+        return {
+          row,
+          word: entry.word,
+          phonetic: entry.phonetic,
+          pronunciation: entry.pronunciation,
+          targetSound: inferSoundFromPhonetic(entry.phonetic)
+        };
+      })
+      .filter(Boolean);
+
+    if (!exerciseState.items.length) {
+      elements.exerciseWord.textContent = 'No matching rows found.';
+      elements.exercisePhonetic.textContent = 'Check the token in the URL.';
+      elements.exerciseProgress.textContent = '0 / 0';
+      elements.exerciseScore.textContent = 'Score: 0 correct';
+      setExerciseFeedback('The provided token did not decode to any CSV entries.', 'incorrect');
+      elements.exerciseNext.classList.add('hidden');
+      return;
+    }
+
+    renderExerciseItem();
+    elements.exerciseNext.addEventListener('click', advanceExercise);
+    elements.vowelButtons.forEach((button) => {
+      button.addEventListener('click', () => handleVowelSelection(button.dataset.sound || ''));
+    });
+  } catch (error) {
+    elements.exerciseWord.textContent = 'Unable to start exercise.';
+    elements.exercisePhonetic.textContent = 'CSV loading failed.';
+    setExerciseFeedback(error.message, 'incorrect');
+  }
+}
+
+initExercise();
+    </script>
+  </body>
+</html>

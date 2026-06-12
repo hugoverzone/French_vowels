@@ -1,0 +1,321 @@
+<!--encode word list in javascript-->
+
+<!-- convert URL into qrcode -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lexique Row QR Builder</title>
+    <link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="quiz-creator">
+
+<!-- input a list of french words -->
+
+                <main class="page">
+                    <section class="hero">
+                        <div class="eyebrow">Lexique phonétique</div>
+                        <h1>Build a Base45 QR URL from French words, then decode it back into words later.</h1>
+                        <p class="subhead">
+                            This page looks up each word in the first column of <strong>../lexique_data/lexique_phonetique.csv</strong>,
+                            compresses the matching row numbers into a compact Base45 token, and renders a QR code for the final link.
+                            If the page is opened with that token already present, it will decode the numbers and recover the words automatically.
+                        </p>
+                    </section>
+
+                    <section class="grid">
+                        <div class="card">
+                            <div class="card-inner">
+                                <h2>Encode words</h2>
+                                <p>Separate words with commas. Matching is exact against the first column in the CSV.</p>
+
+                                <div class="row">
+                                    <label for="frenchWords">French words</label>
+                                    <textarea id="frenchWords" placeholder="ex: pollacks, marge, office"></textarea>
+                                </div>
+
+                                <div class="row">
+                                    <label for="baseUrl">Triangle page URL</label>
+                                    <input type="text" id="baseUrl" placeholder="../index.html">
+                                </div>
+
+                                <div class="actions">
+                                    <button class="primary" id="buildButton">Resolve words and build QR URL</button>
+                                    <button class="secondary" id="decodeButton">Decode current URL</button>
+                                    <button class="soft" id="fillCurrentButton">Use this page as base URL</button>
+                                </div>
+
+                                <div class="meta">
+                                    <div>
+                                        <strong>Compact token</strong>
+                                        <span id="payloadOutput">No payload yet.</span>
+                                    </div>
+                                    <div>
+                                        <strong>Final share URL</strong>
+                                        <span id="shareUrlOutput">No URL yet.</span>
+                                    </div>
+                                    <div>
+                                        <strong>Status</strong>
+                                        <span id="status" class="status">Ready.</span>
+                                    </div>
+                                </div>
+
+                                <div class="output">
+                                    <div class="panel-surface">
+                                        <h2>Resolved rows</h2>
+                                        <div id="rowsSummary" class="status">Enter words and resolve them.</div>
+                                        <div id="rowsTableWrap"></div>
+                                    </div>
+
+                                    <div class="panel-surface">
+                                        <h2>Recovered words</h2>
+                                        <div id="decodedSummary" class="status">If the URL already contains a payload, the words will appear here.</div>
+                                        <div id="decodedWords" class="word-list"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-inner">
+                                <h2>QR code</h2>
+                                <p>The code is generated from the final URL, which includes the compact uppercase Base45 token.</p>
+                            </div>
+                            <div class="qr-box">
+                                <div id="qrcode"></div>
+                                <div id="qrHint" class="status">No QR code yet.</div>
+                            </div>
+                        </div>
+                    </section>
+                </main>
+
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+                <script type="module">
+                    import {
+                        decodeQrStringToList,
+                        encodeListToQrString,
+                        extractTokenFromUrl,
+                        generateQrUrl
+                    } from "../URL_functions.js";
+
+                    const CSV_PATH = "../lexique_data/lexique_phonetique.csv";
+
+                    let lexiquePromise = null;
+
+                    const elements = {
+                        frenchWords: document.getElementById('frenchWords'),
+                        baseUrl: document.getElementById('baseUrl'),
+                        payloadOutput: document.getElementById('payloadOutput'),
+                        shareUrlOutput: document.getElementById('shareUrlOutput'),
+                        status: document.getElementById('status'),
+                        rowsSummary: document.getElementById('rowsSummary'),
+                        rowsTableWrap: document.getElementById('rowsTableWrap'),
+                        decodedSummary: document.getElementById('decodedSummary'),
+                        decodedWords: document.getElementById('decodedWords'),
+                        qrHint: document.getElementById('qrHint'),
+                        qrcode: document.getElementById('qrcode')
+                    };
+
+                    function setStatus(message, isError = false) {
+                        elements.status.textContent = message;
+                        elements.status.classList.toggle('error', isError);
+                    }
+
+                    function normalizeWords(text) {
+                        return text
+                            .split(',')
+                            .map((word) => word.trim())
+                            .filter(Boolean);
+                    }
+
+                    function parseCsvRow(line) {
+                        const commaIndex = line.indexOf(',');
+                        return commaIndex === -1 ? line.trim() : line.slice(0, commaIndex).trim();
+                    }
+
+                    async function loadLexiqueMaps() {
+                        if (!lexiquePromise) {
+                            lexiquePromise = fetch(CSV_PATH)
+                                .then((response) => {
+                                    if (!response.ok) {
+                                        throw new Error(`Unable to load ${CSV_PATH}`);
+                                    }
+                                    return response.text();
+                                })
+                                .then((text) => {
+                                    const wordToRow = new Map();
+                                    const rowToWord = new Map();
+                                    const rows = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+
+                                    rows.forEach((line, index) => {
+                                        const word = parseCsvRow(line);
+                                        const rowNumber = index + 1;
+                                        if (!wordToRow.has(word)) {
+                                            wordToRow.set(word, rowNumber);
+                                        }
+                                        rowToWord.set(rowNumber, word);
+                                    });
+
+                                    return { wordToRow, rowToWord };
+                                });
+                        }
+
+                        return lexiquePromise;
+                    }
+
+                    function renderRowsTable(entries) {
+                        if (!entries.length) {
+                            elements.rowsTableWrap.innerHTML = '';
+                            elements.rowsSummary.textContent = 'No words matched the CSV.';
+                            return;
+                        }
+
+                        const rows = entries
+                            .map((entry) => `
+                                <tr>
+                                    <td>${entry.word}</td>
+                                    <td>${entry.row}</td>
+                                    <td>${entry.status}</td>
+                                </tr>
+                            `)
+                            .join('');
+
+                        elements.rowsSummary.textContent = `${entries.length} word(s) resolved.`;
+                        elements.rowsTableWrap.innerHTML = `
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Word</th>
+                                        <th>Row</th>
+                                        <th>Result</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${rows}</tbody>
+                            </table>
+                        `;
+                    }
+
+                    function renderDecodedWords(rows, rowToWord) {
+                        if (!rows.length) {
+                            elements.decodedSummary.textContent = 'No numbers decoded from the URL.';
+                            elements.decodedWords.innerHTML = '';
+                            return;
+                        }
+
+                        const words = rows
+                            .map((row) => rowToWord.get(row))
+                            .filter(Boolean);
+
+                        elements.decodedSummary.textContent = `${rows.length} number(s) decoded from the URL.`;
+                        elements.decodedWords.innerHTML = words.length
+                            ? words.map((word) => `<span class="pill">${word}</span>`).join('')
+                            : '<span class="status error">Decoded rows did not map back to words.</span>';
+                    }
+
+                    function renderQrCode(url) {
+                        elements.qrcode.innerHTML = '';
+                        elements.qrHint.textContent = url ? 'QR code ready.' : 'No QR code yet.';
+
+                        if (!url) {
+                            return;
+                        }
+
+                        new QRCode(elements.qrcode, {
+                            text: url,
+                            width: 220,
+                            height: 220,
+                            colorDark: '#1f1f1f',
+                            colorLight: '#ffffff',
+                            correctLevel: QRCode.CorrectLevel.M
+                        });
+                    }
+
+                    async function resolveWordsAndBuildUrl() {
+                        const words = normalizeWords(elements.frenchWords.value);
+
+                        if (!words.length) {
+                            setStatus('Add at least one word.', true);
+                            renderRowsTable([]);
+                            elements.payloadOutput.textContent = 'No payload yet.';
+                            elements.shareUrlOutput.textContent = 'No URL yet.';
+                            renderQrCode('');
+                            return;
+                        }
+
+                        try {
+                            setStatus('Loading lexicon and resolving rows...');
+                            const { wordToRow } = await loadLexiqueMaps();
+
+                            const matches = [];
+                            const missing = [];
+
+                            words.forEach((word) => {
+                                const row = wordToRow.get(word);
+                                if (row) {
+                                    matches.push({ word, row, status: 'Matched exact first-column entry' });
+                                    return;
+                                }
+
+                                missing.push(word);
+                            });
+
+                            const payload = encodeListToQrString(matches.map((entry) => entry.row));
+                            const finalUrl = payload ? generateQrUrl(payload, elements.baseUrl.value.trim()) : '';
+
+                            renderRowsTable(matches);
+                            elements.payloadOutput.textContent = payload || 'No payload was produced.';
+                            elements.shareUrlOutput.textContent = finalUrl || 'No URL was produced.';
+
+                            if (missing.length) {
+                                setStatus(`Resolved ${matches.length} word(s). Missing: ${missing.join(', ')}`, true);
+                            } else {
+                                setStatus(`Resolved ${matches.length} word(s) and built the share URL.`);
+                            }
+
+                            renderQrCode(finalUrl);
+                        } catch (error) {
+                            setStatus(error.message, true);
+                            renderRowsTable([]);
+                            elements.payloadOutput.textContent = 'No payload yet.';
+                            elements.shareUrlOutput.textContent = 'No URL yet.';
+                            renderQrCode('');
+                        }
+                    }
+
+                    async function decodeCurrentUrl() {
+                        try {
+                            const { rowToWord } = await loadLexiqueMaps();
+                            const payload = extractTokenFromUrl(window.location.href);
+                            const rows = decodeQrStringToList(payload);
+
+                            if (!payload) {
+                                elements.decodedSummary.textContent = 'No token found in the current URL.';
+                                elements.decodedWords.innerHTML = '';
+                                return;
+                            }
+
+                            renderDecodedWords(rows, rowToWord);
+                        } catch (error) {
+                            elements.decodedSummary.textContent = error.message;
+                            elements.decodedWords.innerHTML = '';
+                        }
+                    }
+
+                    function fillCurrentPageAsBaseUrl() {
+                        const url = new URL("../index.html", window.location.href);
+                        elements.baseUrl.value = url.toString();
+                    }
+
+                    document.getElementById('buildButton').addEventListener('click', resolveWordsAndBuildUrl);
+                    document.getElementById('decodeButton').addEventListener('click', decodeCurrentUrl);
+                    document.getElementById('fillCurrentButton').addEventListener('click', fillCurrentPageAsBaseUrl);
+
+                    window.addEventListener('DOMContentLoaded', () => {
+                        fillCurrentPageAsBaseUrl();
+                        decodeCurrentUrl();
+                    });
+                </script>
+</body>
+</html>
