@@ -135,6 +135,22 @@
                         return commaIndex === -1 ? line.trim() : line.slice(0, commaIndex).trim();
                     }
 
+                    function getTrianglePageUrlFromCurrentPage() {
+                        const url = new URL(window.location.href);
+                        const path = url.pathname;
+
+                        // creator/index.html -> index.html at parent folder.
+                        const nextPath = path
+                            .replace(/\/creator\/index\.html$/i, '/index.html')
+                            .replace(/\/creator\/$/i, '/index.html')
+                            .replace(/\/creator$/i, '/index.html');
+
+                        url.pathname = nextPath;
+                        url.search = '';
+                        url.hash = '';
+                        return url.toString();
+                    }
+
                     async function loadLexiqueMaps() {
                         if (!lexiquePromise) {
                             lexiquePromise = fetch(CSV_PATH)
@@ -262,7 +278,8 @@
                             });
 
                             const payload = encodeListToQrString(matches.map((entry) => entry.row));
-                            const finalUrl = payload ? generateQrUrl(payload, elements.baseUrl.value.trim()) : '';
+                            const baseTarget = elements.baseUrl.value.trim() || getTrianglePageUrlFromCurrentPage();
+                            const finalUrl = payload ? generateQrUrl(payload, baseTarget) : '';
 
                             renderRowsTable(matches);
                             elements.payloadOutput.textContent = payload || 'No payload was produced.';
@@ -304,8 +321,7 @@
                     }
 
                     function fillCurrentPageAsBaseUrl() {
-                        const url = new URL("../index.html", window.location.href);
-                        elements.baseUrl.value = url.toString();
+                        elements.baseUrl.value = getTrianglePageUrlFromCurrentPage();
                     }
 
                     document.getElementById('buildButton').addEventListener('click', resolveWordsAndBuildUrl);
