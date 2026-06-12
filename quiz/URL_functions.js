@@ -1,5 +1,6 @@
 const BASE45_ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:';
 const BASE45_LOOKUP = new Map([...BASE45_ALPHABET].map((character, index) => [character, index]));
+const TOKEN_PATTERN = /^[0-9A-Z $%*+\-./:]+$/;
 
 function normalizeIntegerList(values) {
 	return [...new Set(
@@ -204,23 +205,36 @@ export function extractTokenFromUrl(sourceUrl = typeof window !== 'undefined' ? 
 		return '';
 	}
 
-	const url = new URL(sourceUrl, sourceUrl);
+	let url;
+
+	try {
+		url = new URL(sourceUrl, sourceUrl);
+	} catch {
+		return '';
+	}
+
 	const queryToken = url.searchParams.get('TOKEN') || url.searchParams.get('token');
 	const queryValue = queryToken ? queryToken.trim().toUpperCase() : '';
-	if (/^[0-9A-Z $%*+\-./:]+$/.test(queryValue)) {
+	if (TOKEN_PATTERN.test(queryValue)) {
 		return queryValue;
 	}
 
-	const hashToken = url.hash.startsWith('#') ? decodeURIComponent(url.hash.slice(1).trim()) : '';
-	if (hashToken) {
-		return hashToken.toUpperCase();
+	if (url.hash.startsWith('#')) {
+		try {
+			const hashValue = decodeURIComponent(url.hash.slice(1).trim()).toUpperCase();
+			if (TOKEN_PATTERN.test(hashValue)) {
+				return hashValue;
+			}
+		} catch {
+			return '';
+		}
 	}
 
 	const pathSegments = url.pathname.split('/').filter(Boolean);
 	const lastSegment = pathSegments[pathSegments.length - 1] || '';
 	if (lastSegment && !/\.html?$/i.test(lastSegment)) {
 		const pathToken = lastSegment.trim().toUpperCase();
-		if (/^[0-9A-Z $%*+\-./:]+$/.test(pathToken)) {
+		if (TOKEN_PATTERN.test(pathToken)) {
 			return pathToken;
 		}
 	}

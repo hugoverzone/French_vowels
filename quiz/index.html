@@ -96,7 +96,11 @@
     <script type="module">
 import { decodeQrStringToList, extractTokenFromUrl } from "./URL_functions.js";
 
-const CSV_PATH = "./lexique_data/lexique_phonetique.csv";
+const CSV_PATHS = [
+  new URL('./phonetic_data/lexique_phonetique.csv', import.meta.url).href,
+  new URL('../phonetic_data/lexique_phonetique.csv', import.meta.url).href
+];
+const TRIANGLE_VOWELS_PATHS = [new URL('./JSON', import.meta.url).href];
 const VOWEL_SOUNDS = ["o", "oe", "è", "eu", "au", "é", "ou", "u", "i", "a", "an", "on", "in"];
 
 const elements = {
@@ -113,6 +117,7 @@ const elements = {
 };
 
 let lexiquePromise = null;
+let vowelMapPromise = null;
 const exerciseState = {
   items: [],
   index: 0,
@@ -136,20 +141,68 @@ elements.vowelButtons.forEach((button, index) => {
 });
 
 function parseCsvRow(line) {
-  const [word = '', phonetic = '', pronunciation = ''] = line.split(',').map((part) => part.trim());
-  return { word, phonetic, pronunciation };
+  const [word = '', phonetic = '', ...pronunciationParts] = line.split(',');
+
+  return {
+    word: word.trim(),
+    phonetic: phonetic.trim(),
+    pronunciation: pronunciationParts.join(',').trim()
+  };
+}
+
+async function fetchTextFromCandidates(paths, resourceLabel) {
+  let lastError = null;
+
+  for (const path of paths) {
+    try {
+      const response = await fetch(path);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      return await response.text();
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  const details = lastError ? ` (${lastError.message})` : '';
+  throw new Error(`Impossible de charger ${resourceLabel}${details}`);
+}
+
+async function fetchJsonFromCandidates(paths, resourceLabel) {
+  const text = await fetchTextFromCandidates(paths, resourceLabel);
+  return JSON.parse(text);
+}
+
+async function loadTriangleVowelMap() {
+  if (!vowelMapPromise) {
+    vowelMapPromise = fetchJsonFromCandidates(TRIANGLE_VOWELS_PATHS, 'la table phonétique')
+      .then((data) => {
+        const phoneticToSound = new Map();
+        const allowedSounds = new Set(VOWEL_SOUNDS);
+
+        (data.vowels || []).forEach((entry) => {
+          if (!allowedSounds.has(entry.french)) {
+            return;
+          }
+
+          (entry.phonetic || []).forEach((token) => {
+            phoneticToSound.set(token, entry.french);
+          });
+        });
+
+        return phoneticToSound;
+      });
+  }
+
+  return vowelMapPromise;
 }
 
 async function loadLexiqueRows() {
   if (!lexiquePromise) {
-    lexiquePromise = fetch(CSV_PATH)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Impossible de charger ${CSV_PATH}`);
-        }
-
-        return response.text();
-      })
+    lexiquePromise = fetchTextFromCandidates(CSV_PATHS, 'le CSV lexique_phonetique.csv')
       .then((text) => {
         const rowToEntry = new Map();
         const wordToRow = new Map();
@@ -172,47 +225,49 @@ async function loadLexiqueRows() {
   return lexiquePromise;
 }
 
-function inferSoundFromPhonetic(phoneticCode) {
-  if (!phoneticCode) {
-    return '';
+function inferSoundsFromPhonetic(phoneticCode, phoneticToSound) {
+  if (!phoneticCode || !phoneticToSound) {
+    return [];
   }
 
-  const patterns = [
-    ['an', 'an'],
-    ['on', 'on'],
-    ['in', 'in'],
-    ['eu', 'eu'],
-    ['oe', 'oe'],
-    ['au', 'au'],
-    ['@', 'an'],
-    ['§', 'on'],
-    ['5', 'in'],
-    ['°', 'eu'],
-    ['E', 'è'],
-    ['e', 'é'],
-    ['O', 'o'],
-    ['o', 'o'],
-    ['u', 'u'],
-    ['i', 'i'],
-    ['a', 'a']
-  ];
+  return [...phoneticCode]
+    .map((token) => phoneticToSound.get(token))
+    .filter(Boolean);
+}
 
-  for (let index = 0; index < phoneticCode.length; index += 1) {
-    const slice = phoneticCode.slice(index, index + 2);
-    const oneChar = phoneticCode[index];
+function getCurrentItem() {
+  return exerciseState.items[exerciseState.index];
+}
 
-    for (const [token, sound] of patterns) {
-      if (token.length === 2 && slice === token) {
-        return sound;
-      }
+function getCurrentTargetSound(item) {
+  return item?.targetSounds?.[item.soundIndex] || '';
+}
 
-      if (token.length === 1 && oneChar === token) {
-        return sound;
-      }
-    }
+function updateExerciseProgress(item) {
+  if (!item) {
+    elements.exerciseProgress.textContent = '0 / 0';
+    return;
   }
 
-  return '';
+  elements.exerciseProgress.textContent = `Mot ${exerciseState.index + 1} / ${exerciseState.items.length} · Son ${item.soundIndex + 1} / ${item.targetSounds.length}`;
+}
+
+function advanceSound() {
+  const item = getCurrentItem();
+
+  if (!item) {
+    return;
+  }
+
+  item.soundIndex += 1;
+  exerciseState.locked = false;
+
+  if (item.soundIndex >= item.targetSounds.length) {
+    advanceExercise();
+    return;
+  }
+
+  renderExerciseItem();
 }
 
 function setExerciseFeedback(message, tone = '') {
@@ -225,12 +280,11 @@ function setExerciseFeedback(message, tone = '') {
 }
 
 function renderExerciseItem() {
-  const item = exerciseState.items[exerciseState.index];
+  const item = getCurrentItem();
 
   if (!item) {
     elements.exerciseWord.textContent = 'Aucun exercice chargé.';
     elements.exercisePhonetic.textContent = 'Ouvrez une URL contenant TOKEN=... pour commencer.';
-    elements.exerciseProgress.textContent = '0 / 0';
     elements.exerciseScore.textContent = 'Réussites : 0';
     elements.exerciseNext.classList.add('hidden');
     setExerciseFeedback('', '');
@@ -239,12 +293,12 @@ function renderExerciseItem() {
 
   elements.exerciseWord.textContent = item.word;
   elements.exercisePhonetic.textContent = item.phonetic;
-  elements.exerciseProgress.textContent = `${exerciseState.index + 1} / ${exerciseState.items.length}`;
   elements.exerciseScore.textContent = `Réussites : ${exerciseState.correct}`;
   elements.exerciseNext.classList.add('hidden');
+  updateExerciseProgress(item);
 
-  if (item.targetSound) {
-    setExerciseFeedback("Cliquez sur la voyelle qui correspond au premier son que vous entendez dans le mot.", '');
+  if (item.targetSounds.length) {
+    setExerciseFeedback(`Cliquez sur la voyelle qui correspond au son ${item.soundIndex + 1} / ${item.targetSounds.length} de ce mot.`, '');
   } else {
     setExerciseFeedback("Aucun son vocalique n'a pu être déduit pour cette ligne. Utilisez Mot suivant pour continuer.", 'incorrect');
     elements.exerciseNext.classList.remove('hidden');
@@ -254,7 +308,7 @@ function renderExerciseItem() {
 function finishExercise() {
   elements.exerciseWord.textContent = 'Exercice terminé';
   elements.exercisePhonetic.textContent = 'Toutes les lignes demandées ont été affichées.';
-  elements.exerciseProgress.textContent = `${exerciseState.items.length} / ${exerciseState.items.length}`;
+  updateExerciseProgress(null);
   elements.exerciseScore.textContent = `Réussites : ${exerciseState.correct}`;
   elements.exerciseNext.classList.add('hidden');
   setExerciseFeedback('Rechargez la page avec un nouveau jeton TOKEN=... pour rejouer.', 'correct');
@@ -273,32 +327,33 @@ function advanceExercise() {
 }
 
 function handleVowelSelection(sound) {
-  const item = exerciseState.items[exerciseState.index];
+  const item = getCurrentItem();
+  const currentTargetSound = getCurrentTargetSound(item);
 
   if (!item || exerciseState.locked) {
     return;
   }
 
-  if (!item.targetSound) {
+  if (!currentTargetSound) {
     setExerciseFeedback('Cette ligne n’a pas de son cible. Utilisez Mot suivant pour continuer.', 'incorrect');
     return;
   }
 
-  if (sound === item.targetSound) {
+  if (sound === currentTargetSound) {
     exerciseState.correct += 1;
     exerciseState.locked = true;
-    setExerciseFeedback(`Bien joué. ${item.word} correspond au son ${item.targetSound}.`, 'correct');
+    setExerciseFeedback(`Bien joué. Son ${item.soundIndex + 1} trouvé pour ${item.word}.`, 'correct');
     elements.exerciseScore.textContent = `Réussites : ${exerciseState.correct}`;
     elements.exerciseNext.classList.remove('hidden');
     window.setTimeout(() => {
       if (exerciseState.locked) {
-        advanceExercise();
+        advanceSound();
       }
     }, 700);
     return;
   }
 
-  setExerciseFeedback(`Pas tout à fait. Réessayez pour ${item.word}.`, 'incorrect');
+  setExerciseFeedback(`Pas tout à fait. Réessayez le son ${item.soundIndex + 1} / ${item.targetSounds.length} pour ${item.word}.`, 'incorrect');
 }
 
 async function initExercise() {
@@ -311,7 +366,20 @@ async function initExercise() {
 
   try {
     const rows = decodeQrStringToList(payload);
-    const { rowToEntry } = await loadLexiqueRows();
+    let rowToEntry;
+    let phoneticToSound;
+
+    try {
+      ({ rowToEntry } = await loadLexiqueRows());
+    } catch (error) {
+      throw new Error(`Le CSV n'a pas pu être chargé: ${error.message}`);
+    }
+
+    try {
+      phoneticToSound = await loadTriangleVowelMap();
+    } catch (error) {
+      throw new Error(`La table phonétique n'a pas pu être chargée: ${error.message}`);
+    }
 
     exerciseState.items = rows
       .map((row) => {
@@ -326,7 +394,8 @@ async function initExercise() {
           word: entry.word,
           phonetic: entry.phonetic,
           pronunciation: entry.pronunciation,
-          targetSound: inferSoundFromPhonetic(entry.phonetic)
+          targetSounds: inferSoundsFromPhonetic(entry.phonetic, phoneticToSound),
+          soundIndex: 0
         };
       })
       .filter(Boolean);
@@ -348,8 +417,8 @@ async function initExercise() {
     });
   } catch (error) {
     elements.exerciseWord.textContent = "Impossible de démarrer l’exercice.";
-    elements.exercisePhonetic.textContent = 'Le chargement du CSV a échoué.';
-    setExerciseFeedback(error.message, 'incorrect');
+    elements.exercisePhonetic.textContent = error.message || 'Le chargement des données a échoué.';
+    setExerciseFeedback(error.message || 'Le chargement des données a échoué.', 'incorrect');
   }
 }
 

@@ -19,7 +19,7 @@
                         <div class="eyebrow">Lexique phonétique</div>
                         <h1>Générez une URL QR Base45 à partir de mots français, puis décodez-la ensuite en mots.</h1>
                         <p class="subhead">
-                            Cette page recherche chaque mot dans la première colonne de <strong>../lexique_data/lexique_phonetique.csv</strong>,
+                            Cette page recherche chaque mot dans la première colonne de <strong>../phonetic_data/lexique_phonetique.csv</strong>,
                             compresse les numéros de ligne correspondants dans un jeton Base45 compact, puis génère un QR code pour le lien final.
                             Si la page est ouverte avec ce jeton déjà présent, elle décode les nombres et retrouve automatiquement les mots.
                         </p>
@@ -104,7 +104,7 @@
                         generateQrUrl
                     } from "../URL_functions.js";
 
-                    const CSV_PATH = "../lexique_data/lexique_phonetique.csv";
+                    const CSV_PATH = "../phonetic_data/lexique_phonetique.csv";
 
                     let lexiquePromise = null;
 

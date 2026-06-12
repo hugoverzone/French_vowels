@@ -1,8 +1,12 @@
 # data sorting
 import csv
+import os
 
+from pathlib import Path
 
-fileLocation ="H:/French_vowels/trangle_exercises/lexique_data/Lexique400/Lexique4/Lexique4.tsv"
+root_dir = Path(__file__).resolve().parent
+
+fileLocation = root_dir / 'Lexique400' / 'Lexique4' / 'Lexique4.tsv'
 
 # open tsv  and read data into a dictionary that takes the first column as key and the second and third columns as values in a tupple, skipping the first line of the file
 
