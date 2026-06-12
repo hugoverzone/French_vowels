@@ -196,7 +196,8 @@ export function generateQrUrl(token, domain = typeof window !== 'undefined' ? wi
 	}
 
 	const url = new URL(resolvedBaseUrl, typeof window !== 'undefined' ? window.location.href : resolvedBaseUrl);
-	url.searchParams.set('TOKEN', normalizedToken);
+	url.search = '';
+	url.hash = normalizedToken ? `T=${normalizedToken}` : '';
 	return url.toString();
 }
 
@@ -213,20 +214,21 @@ export function extractTokenFromUrl(sourceUrl = typeof window !== 'undefined' ? 
 		return '';
 	}
 
-	const queryToken = url.searchParams.get('TOKEN') || url.searchParams.get('token');
+	const queryToken = url.searchParams.get('T');
 	const queryValue = queryToken ? queryToken.trim().toUpperCase() : '';
 	if (TOKEN_PATTERN.test(queryValue)) {
 		return queryValue;
 	}
 
 	if (url.hash.startsWith('#')) {
-		try {
-			const hashValue = decodeURIComponent(url.hash.slice(1).trim()).toUpperCase();
-			if (TOKEN_PATTERN.test(hashValue)) {
-				return hashValue;
+		const hashValue = url.hash.slice(1).trim().toUpperCase();
+		const hashPrefix = 'T=';
+
+		if (hashValue.startsWith(hashPrefix)) {
+			const hashToken = hashValue.slice(hashPrefix.length);
+			if (TOKEN_PATTERN.test(hashToken)) {
+				return hashToken;
 			}
-		} catch {
-			return '';
 		}
 	}
 

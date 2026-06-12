@@ -35,6 +35,7 @@
       <div class="exercise-feedback" id="exercise-feedback" aria-live="polite"></div>
       <div class="exercise-footer">
         <div class="exercise-progress" id="exercise-score">Réussites : 0</div>
+        <button class="exercise-button secondary" id="exercise-speak" type="button">Écouter le mot</button>
         <button class="exercise-button secondary hidden" id="exercise-next" type="button">Mot suivant</button>
       </div>
     </section>
@@ -91,8 +92,9 @@
     <footer class="attribution">
       <p>Développé par <a href="https://hugo.verzone.ch" target="_blank" rel="noopener noreferrer">Hugo Verzone</a> | 
         Concept du triangle des voyelles par <a href="https://wp.unil.ch/ficellesapprendre/sophia-smajlovic-1142/" target="_blank" rel="noopener noreferrer">Sophia Smajlovic (UNIL)</a> | 
-        Audio de prononciation provenant de <a href="https://fonetix.org/fr/etudier/ressources" target="_blank" rel="noopener noreferrer">Fonetix.org</a></p>
-    </footer>
+        Audio de prononciation provenant de <a href="https://fonetix.org/fr/etudier/ressources" target="_blank" rel="noopener noreferrer">Fonetix.org</a> |
+        Dictionaire phonétique provenant de <a href="http://www.lexique.org/" target="_blank" rel="noopener noreferrer">Lexique.org</a></p>  
+      </footer>
     <script type="module">
 import { decodeQrStringToList, extractTokenFromUrl } from "./URL_functions.js";
 
@@ -111,6 +113,7 @@ const elements = {
   exerciseProgress: document.getElementById('exercise-progress'),
   exerciseScore: document.getElementById('exercise-score'),
   exerciseFeedback: document.getElementById('exercise-feedback'),
+  exerciseSpeak: document.getElementById('exercise-speak'),
   exerciseNext: document.getElementById('exercise-next'),
   triangle: document.querySelector('svg'),
   vowelButtons: [...document.querySelectorAll('.vowel')]
@@ -279,12 +282,32 @@ function setExerciseFeedback(message, tone = '') {
   }
 }
 
+function speakCurrentWord() {
+  const item = getCurrentItem();
+  const word = item?.word || elements.exerciseWord.textContent.trim();
+
+  if (!word || word === 'Aucun exercice chargé.' || word === 'En attente du jeton...') {
+    setExerciseFeedback('Aucun mot à lire pour le moment.', 'incorrect');
+    return;
+  }
+
+  if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
+    setExerciseFeedback('La synthèse vocale n’est pas prise en charge dans ce navigateur.', 'incorrect');
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(word);
+  utterance.lang = 'fr-FR';
+  window.speechSynthesis.speak(utterance);
+}
+
 function renderExerciseItem() {
   const item = getCurrentItem();
 
   if (!item) {
     elements.exerciseWord.textContent = 'Aucun exercice chargé.';
-    elements.exercisePhonetic.textContent = 'Ouvrez une URL contenant TOKEN=... pour commencer.';
+    elements.exercisePhonetic.textContent = 'Ouvrez une URL contenant T=... pour commencer.';
     elements.exerciseScore.textContent = 'Réussites : 0';
     elements.exerciseNext.classList.add('hidden');
     setExerciseFeedback('', '');
@@ -311,7 +334,7 @@ function finishExercise() {
   updateExerciseProgress(null);
   elements.exerciseScore.textContent = `Réussites : ${exerciseState.correct}`;
   elements.exerciseNext.classList.add('hidden');
-  setExerciseFeedback('Rechargez la page avec un nouveau jeton TOKEN=... pour rejouer.', 'correct');
+  setExerciseFeedback('Rechargez la page avec un nouveau jeton T=... pour rejouer.', 'correct');
 }
 
 function advanceExercise() {
@@ -411,6 +434,7 @@ async function initExercise() {
     }
 
     renderExerciseItem();
+    elements.exerciseSpeak.addEventListener('click', speakCurrentWord);
     elements.exerciseNext.addEventListener('click', advanceExercise);
     elements.vowelButtons.forEach((button) => {
       button.addEventListener('click', () => handleVowelSelection(button.dataset.sound || ''));
