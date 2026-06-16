@@ -12,6 +12,6 @@
     {"french": "oe", "phonetic": ["°", "9"]},
     {"french": "on", "phonetic": ["§"]},
     {"french": "ou", "phonetic": ["u"]},
-    {"french": "u", "phonetic": ["y", "8"]},
+    {"french": "u", "phonetic": ["y", "8"]}
   ]
 }
