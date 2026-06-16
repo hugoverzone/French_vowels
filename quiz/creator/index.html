@@ -10,12 +10,57 @@
     <link rel="stylesheet" href="../../styles.css">
 </head>
 
-<body class="quiz-creator">
+<body class="quiz-creator mode-user">
+
+                <div class="view-toggle" role="tablist" aria-label="Mode d’affichage">
+                    <button type="button" id="adminViewButton" class="view-toggle-btn" aria-pressed="false">Admin</button>
+                    <button type="button" id="userViewButton" class="view-toggle-btn is-active" aria-pressed="true">User</button>
+                </div>
 
 <!-- input a list of french words -->
 
                 <main class="page">
-                    <section class="hero">
+                    <section class="user-view user-only">
+                        <div class="card user-panel">
+                            <div class="card-inner">
+                                <h1>Créer un exercice avec le triangle des voyelles</h1>
+                                <p class="user-instructions">Saisissez des mots séparés par des virgules.</p>
+
+                                <div class="row compact-row">
+                                    <label for="userWords">Mots français</label>
+                                    <textarea id="userWords" placeholder="ex. pollacks, marge, office"></textarea>
+                                </div>
+
+                                <div class="actions single-action">
+                                    <button class="primary" id="userBuildButton">Créer le lien / QR</button>
+                                </div>
+
+                                <div class="user-statuses user-statuses-top">
+                                    <div class="user-status-card">
+                                        <strong>Validation des mots</strong>
+                                        <span id="userWordStatus" class="status">En attente.</span>
+                                    </div>
+
+                                    <div class="user-status-card">
+                                        <strong>Encodage / extraction</strong>
+                                        <span id="userEncodingStatus" class="status status-pending">en attente</span>
+                                    </div>
+                                </div>
+
+                                <div class="user-status-card user-link-card">
+                                    <strong>Lien généré</strong>
+                                    <a id="userShareUrlOutput" href="#" target="_blank" rel="noopener noreferrer">Aucune URL pour le moment.</a>
+                                </div>
+
+                                <div class="qr-box user-qr-box">
+                                    <div id="userQrcode"></div>
+                                    <div id="userQrHint" class="status">Aucun code QR pour le moment.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="hero admin-only">
                         <div class="eyebrow">Lexique phonétique</div>
                         <h1>Générez une URL QR Base45 à partir de mots français, puis décodez-la ensuite en mots.</h1>
                         <p class="subhead">
@@ -25,7 +70,7 @@
                         </p>
                     </section>
 
-                    <section class="grid">
+                    <section class="grid admin-only">
                         <div class="card">
                             <div class="card-inner">
                                 <h2>Encoder les mots</h2>
@@ -105,10 +150,20 @@
                     } from "../URL_functions.js";
 
                     const CSV_PATH = "../phonetic_data/lexique_phonetique.csv";
+                    const VIEW_STORAGE_KEY = 'quiz-creator-view-mode';
 
                     let lexiquePromise = null;
 
                     const elements = {
+                        adminViewButton: document.getElementById('adminViewButton'),
+                        userViewButton: document.getElementById('userViewButton'),
+                        userWords: document.getElementById('userWords'),
+                        userWordStatus: document.getElementById('userWordStatus'),
+                        userEncodingStatus: document.getElementById('userEncodingStatus'),
+                        userShareUrlOutput: document.getElementById('userShareUrlOutput'),
+                        userQrHint: document.getElementById('userQrHint'),
+                        userQrcode: document.getElementById('userQrcode'),
+                        userBuildButton: document.getElementById('userBuildButton'),
                         frenchWords: document.getElementById('frenchWords'),
                         baseUrl: document.getElementById('baseUrl'),
                         payloadOutput: document.getElementById('payloadOutput'),
@@ -122,6 +177,31 @@
                         qrHint: document.getElementById('qrHint'),
                         qrcode: document.getElementById('qrcode')
                     };
+
+                    function getSavedViewMode() {
+                        try {
+                            return window.localStorage.getItem(VIEW_STORAGE_KEY) || 'user';
+                        } catch {
+                            return 'user';
+                        }
+                    }
+
+                    function setViewMode(mode) {
+                        const resolvedMode = mode === 'admin' ? 'admin' : 'user';
+
+                        document.body.classList.toggle('mode-admin', resolvedMode === 'admin');
+                        document.body.classList.toggle('mode-user', resolvedMode === 'user');
+                        elements.adminViewButton.classList.toggle('is-active', resolvedMode === 'admin');
+                        elements.userViewButton.classList.toggle('is-active', resolvedMode === 'user');
+                        elements.adminViewButton.setAttribute('aria-pressed', String(resolvedMode === 'admin'));
+                        elements.userViewButton.setAttribute('aria-pressed', String(resolvedMode === 'user'));
+
+                        try {
+                            window.localStorage.setItem(VIEW_STORAGE_KEY, resolvedMode);
+                        } catch {
+                            // Ignore storage failures.
+                        }
+                    }
 
                     function setStatus(message, isError = false) {
                         elements.status.textContent = message;
@@ -268,6 +348,85 @@
                         });
                     }
 
+                    function renderUserQrCode(url) {
+                        elements.userQrcode.innerHTML = '';
+                        elements.userQrHint.textContent = url ? 'Code QR prêt.' : 'Aucun code QR pour le moment.';
+
+                        if (!url) {
+                            return;
+                        }
+
+                        new QRCode(elements.userQrcode, {
+                            text: url,
+                            width: 220,
+                            height: 220,
+                            colorDark: '#1f1f1f',
+                            colorLight: '#ffffff',
+                            correctLevel: QRCode.CorrectLevel.M
+                        });
+                    }
+
+                    function renderUserLink(url) {
+                        if (!url) {
+                            elements.userShareUrlOutput.textContent = 'Aucune URL pour le moment.';
+                            elements.userShareUrlOutput.removeAttribute('href');
+                            return;
+                        }
+
+                        elements.userShareUrlOutput.textContent = url;
+                        elements.userShareUrlOutput.href = url;
+                    }
+
+                    function renderUserWordStatus(matches, missing) {
+                        if (!matches.length && !missing.length) {
+                            elements.userWordStatus.textContent = 'En attente.';
+                            elements.userWordStatus.classList.remove('error');
+                            return;
+                        }
+
+                        if (missing.length) {
+                            elements.userWordStatus.textContent = `Manquants : ${missing.join(', ')}`;
+                            elements.userWordStatus.classList.add('error');
+                            return;
+                        }
+
+                        elements.userWordStatus.textContent = `${matches.length} mot(s) valide(s).`;
+                        elements.userWordStatus.classList.remove('error');
+                    }
+
+                    function renderUserEncodingStatus(payload, finalUrl, rowToWord) {
+                        const sourceUrl = finalUrl || window.location.href;
+                        const extractedToken = extractTokenFromUrl(sourceUrl);
+                        const decodedRows = decodeQrStringToList(extractedToken);
+                        const decodedWords = decodedRows.map((row) => rowToWord.get(row)).filter(Boolean);
+                        const isValid = Boolean(payload && finalUrl && extractedToken === payload && decodedWords.length === decodedRows.length && decodedRows.length > 0);
+                        const hasAttemptedEncoding = Boolean(payload || finalUrl);
+
+                        elements.userEncodingStatus.classList.remove('status-pending', 'status-valid', 'status-invalid');
+
+                        if (!hasAttemptedEncoding) {
+                            elements.userEncodingStatus.textContent = 'en attente';
+                            elements.userEncodingStatus.classList.add('status-pending');
+                            return;
+                        }
+
+                        if (isValid) {
+                            elements.userEncodingStatus.textContent = 'validé';
+                            elements.userEncodingStatus.classList.add('status-valid');
+                            return;
+                        }
+
+                        elements.userEncodingStatus.textContent = 'non validé - veuillez réessayer';
+                        elements.userEncodingStatus.classList.add('status-invalid');
+                    }
+
+                    function syncUserView(state) {
+                        renderUserWordStatus(state.matches || [], state.missing || []);
+                        renderUserEncodingStatus(state.payload || '', state.finalUrl || '', state.rowToWord || new Map());
+                        renderUserLink(state.finalUrl || '');
+                        renderUserQrCode(state.finalUrl || '');
+                    }
+
                     async function resolveWordsAndBuildUrl() {
                         const words = normalizeWords(elements.frenchWords.value);
 
@@ -305,6 +464,7 @@
                             elements.payloadOutput.textContent = payload || 'Aucun jeton n’a été produit.';
                             elements.shareUrlOutput.textContent = finalUrl || 'Aucune URL n’a été produite.';
                             renderDecodedWordsFromSource(finalUrl, rowToWord);
+                            syncUserView({ matches, missing, payload, finalUrl, rowToWord });
 
                             if (missing.length) {
                                 setStatus(`Résolu ${matches.length} mot(s). Manquants : ${missing.join(', ')}`, true);
@@ -319,6 +479,44 @@
                             elements.payloadOutput.textContent = 'Aucun jeton pour le moment.';
                             elements.shareUrlOutput.textContent = 'Aucune URL pour le moment.';
                             renderQrCode('');
+                            syncUserView({});
+                        }
+                    }
+
+                    async function resolveUserWordsAndBuildUrl() {
+                        const words = normalizeWords(elements.userWords.value);
+
+                        if (!words.length) {
+                            syncUserView({ matches: [], missing: [], payload: '', finalUrl: '', rowToWord: new Map() });
+                            return;
+                        }
+
+                        try {
+                            const { wordToRow, rowToWord } = await loadLexiqueMaps();
+                            const matches = [];
+                            const missing = [];
+
+                            words.forEach((word) => {
+                                const row = wordToRow.get(word);
+                                if (row) {
+                                    matches.push({ word, row, status: 'Correspondance exacte à la première colonne' });
+                                    return;
+                                }
+
+                                missing.push(word);
+                            });
+
+                            const payload = encodeListToQrString(matches.map((entry) => entry.row));
+                            const finalUrl = payload ? generateQrUrl(payload, getTrianglePageUrlFromCurrentPage()).toUpperCase() : '';
+
+                            syncUserView({ matches, missing, payload, finalUrl, rowToWord });
+                        } catch (error) {
+                            elements.userWordStatus.textContent = error.message;
+                            elements.userWordStatus.classList.add('error');
+                            elements.userEncodingStatus.textContent = 'Aucun jeton pour le moment.';
+                            elements.userEncodingStatus.classList.remove('error');
+                            renderUserLink('');
+                            renderUserQrCode('');
                         }
                     }
 
@@ -326,10 +524,13 @@
                         try {
                             const { rowToWord } = await loadLexiqueMaps();
                             renderDecodedWordsFromSource(window.location.href, rowToWord);
+                            renderUserEncodingStatus('', '', rowToWord);
                         } catch (error) {
                             elements.decodedSummary.textContent = error.message;
                             elements.extractedTokenOutput.textContent = 'Aucun';
                             elements.decodedWords.innerHTML = '';
+                            elements.userEncodingStatus.textContent = error.message;
+                            elements.userEncodingStatus.classList.add('error');
                         }
                     }
 
@@ -340,10 +541,15 @@
                     document.getElementById('buildButton').addEventListener('click', resolveWordsAndBuildUrl);
                     document.getElementById('decodeButton').addEventListener('click', decodeCurrentUrl);
                     document.getElementById('fillCurrentButton').addEventListener('click', fillCurrentPageAsBaseUrl);
+                    elements.userBuildButton.addEventListener('click', resolveUserWordsAndBuildUrl);
+                    elements.adminViewButton.addEventListener('click', () => setViewMode('admin'));
+                    elements.userViewButton.addEventListener('click', () => setViewMode('user'));
 
                     window.addEventListener('DOMContentLoaded', () => {
+                        setViewMode(getSavedViewMode());
                         fillCurrentPageAsBaseUrl();
                         decodeCurrentUrl();
+                        syncUserView({ matches: [], missing: [], payload: '', finalUrl: '', rowToWord: new Map() });
                     });
                 </script>
 </body>
