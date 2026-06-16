@@ -9,12 +9,6 @@
   <body>
     <h1>Les Voyelles</h1>
     <p>Cliquez sur une voyelle pour l'écouter</p>
-    <div class="audio-toggle">
-      <label>
-        <input type="checkbox" id="audio-toggle">
-        Avec exemples
-      </label>
-    </div>
 
     <section class="exercise-panel" id="exercise-panel">
       <h2>Mode exercice</h2>
@@ -106,7 +100,6 @@ const TRIANGLE_VOWELS_PATHS = [new URL('./JSON', import.meta.url).href];
 const VOWEL_SOUNDS = ["o", "oe", "è", "eu", "au", "é", "ou", "u", "i", "a", "an", "on", "in"];
 
 const elements = {
-  audioToggle: document.getElementById('audio-toggle'),
   exercisePanel: document.getElementById('exercise-panel'),
   exerciseWord: document.getElementById('exercise-word'),
   exercisePhonetic: document.getElementById('exercise-phonetic'),
@@ -129,9 +122,7 @@ const exerciseState = {
 };
 
 function play(sound) {
-  const audioPath = elements.audioToggle.checked
-    ? "../assets/audio/vowels_fonetix_with_example/"
-    : "../assets/audio/vowels_fonetix_without_example/";
+  const audioPath = "../assets/audio/vowels_fonetix_without_example/";
 
   const audio = new Audio(audioPath + sound + ".mp3");
   audio.play();
