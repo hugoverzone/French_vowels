@@ -12,14 +12,16 @@ fileLocation = root_dir / 'Lexique400' / 'Lexique4' / 'Lexique4.tsv'
 
 def read_tsv(file_location):
     data = {}
-    with open(file_location, 'r', encoding='utf-8') as f:
-        next(f)  # skip the first line
-        for line in f:
-            parts = line.strip().split('\t')
-            if len(parts) >= 3:
-                key = parts[0]
-                value = (parts[1], parts[2])
-                data[key] = value
+    with open(file_location, 'r', encoding='utf-8') as french_dictionary:
+        next(french_dictionary)  # skip the first line
+        for line in french_dictionary:
+            entry = line.strip().split('\t')
+            word_graphemes = entry[0]
+            word_phonemes = entry[1]
+            word_phonemes_IPA = entry[2]
+            type_of_word = entry[5].replace(",", " ")
+            value = (word_phonemes, word_phonemes_IPA, type_of_word)
+            data[word_graphemes] = value
     return data
 
 # show the first 5 lines of the file
@@ -35,7 +37,7 @@ def write_csv(data, filename):
         for key, value in data.items():
             writer.writerow([key] + list(value))
 
-write_csv(data, 'lexique_phonetique.csv')
+write_csv(data, 'quiz/phonetic_data/lexique_phonetique2.csv')
 
 #list all the unique characters in the strings of values in the second column
 phonetic_characters = []
