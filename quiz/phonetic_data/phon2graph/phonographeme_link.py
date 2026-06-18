@@ -1,6 +1,8 @@
 import os
 import json
 
+import unicodedata
+
 from phon2graph_french import decoupage
 
 #paths
@@ -62,17 +64,26 @@ for word, trans, phon, types in lexique_phonetique:
 
     phon_decoupage_str = "|".join([f"{c}" for p, g, c in decoup])
     graph_decoupage_str = "|".join([f"{g}" for p, g, c in decoup])
+    successful_decoup = False if decoup[0][0] == "phon_echec" else True
+    simple_graph_decoupage_str = ""
+    print(decoup)
+    for j in range(len(decoup)):
+        if decoup[j][0] != "phon_echec":
+            simple_graph_decoupage_str += trans[j]
+            if len(unicodedata.combining(decoup[j][2])) > 1:     #to correct Hugo
+                print("continued", decoup[j][2], len(decoup[j][2]))
+                continue
+            simple_graph_decoupage_str += "|"
+
+    print (len(decoup), simple_graph_decoupage_str)
+    connected_lexique.append((word, trans, phon, types, successful_decoup, graph_decoupage_str, phon_decoupage_str, simple_graph_decoupage_str))
     
     if decoup[0][0] == "phon_echec":
         nbr_fails += 1
         fails.append(word)
         decoup[0] =  tuple(('phon_echec', '', ''))
-        continue
-    successful = False if decoup[0][0] == "phon_echec" else True
-    connected_lexique.append((word, trans, phon, types, successful, graph_decoupage_str, phon_decoupage_str))
-    print(len(connected_lexique))
-
-    if i >= 10000:  # Limit output for demonstration
+        
+    if i >= 200:  # Limit output for demonstration
         break
 
 
@@ -89,5 +100,5 @@ print(f"Number of failing words containing '-': {dash}")
 
 #save connected lexique to csv file
 with open("quiz/phonetic_data/lexique_phonetique_connected.csv", mode="w", encoding='utf-8') as connected_file:
-    for word, trans, phon, types, success, phon_decoup, graph_decoup in connected_lexique:
-        connected_file.write(f"{word},{trans},{phon},{types},{success},{graph_decoup},{phon_decoup}\n")
+    for word, trans, phon, types, successful_decoup, phon_decoup, graph_decoup, simple_graph_decoup in connected_lexique:
+        connected_file.write(f"{word},{trans},{phon},{types},{successful_decoup},{graph_decoup},{phon_decoup},{simple_graph_decoup}\n")
