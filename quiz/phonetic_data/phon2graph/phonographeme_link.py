@@ -54,21 +54,27 @@ i = 0
 nbr_fails = 0
 fails = []
 
-for word, trans, phon, type in lexique_phonetique:
+connected_lexique = []
+
+for word, trans, phon, types in lexique_phonetique:
     i += 1
-    decoup = decoupage(word.replace('-', '-'), phon, phon2graph, phon2class)
-    if decoup[0][0] == "phon_echec":
-        nbr_fails += 1
-        fails.append(word)
-        continue
+    decoup = list(decoupage(word.replace('-', '-'), phon, phon2graph, phon2class))
 
     phon_decoupage_str = "|".join([f"{c}" for p, g, c in decoup])
     graph_decoupage_str = "|".join([f"{g}" for p, g, c in decoup])
-    print(f"Word: {word}, Transcription: {trans}, Phonemes: {phon}, Type: {type}, Decoupage: {phon_decoupage_str}, Graphies: {graph_decoupage_str}")
+    
+    if decoup[0][0] == "phon_echec":
+        nbr_fails += 1
+        fails.append(word)
+        decoup[0] =  tuple(('phon_echec', '', ''))
+        continue
+    successful = False if decoup[0][0] == "phon_echec" else True
+    connected_lexique.append((word, trans, phon, types, successful, graph_decoupage_str, phon_decoupage_str))
+    print(len(connected_lexique))
+
     if i >= 10000:  # Limit output for demonstration
         break
 
-print(nbr_fails)
 
 x=0
 dash = 0
@@ -77,6 +83,11 @@ for fail_word in fails:
         x += 1
     if '-' in fail_word:
         dash += 1
+print(f"Number of failing words: {nbr_fails}")
 print(f"Number of failing words containing 'x': {x}")
 print(f"Number of failing words containing '-': {dash}")
-print(fails)
+
+#save connected lexique to csv file
+with open("quiz/phonetic_data/lexique_phonetique_connected.csv", mode="w", encoding='utf-8') as connected_file:
+    for word, trans, phon, types, success, phon_decoup, graph_decoup in connected_lexique:
+        connected_file.write(f"{word},{trans},{phon},{types},{success},{graph_decoup},{phon_decoup}\n")
