@@ -60,45 +60,51 @@ connected_lexique = []
 
 for word, trans, phon, types in lexique_phonetique:
     i += 1
-    decoup = list(decoupage(word.replace('-', '-'), phon, phon2graph, phon2class))
+    decoup = list(decoupage(word.replace('-', '').replace(' ', ''), phon, phon2graph, phon2class))
 
     phon_decoupage_str = "|".join([f"{c}" for p, g, c in decoup])
     graph_decoupage_str = "|".join([f"{g}" for p, g, c in decoup])
     successful_decoup = False if decoup[0][0] == "phon_echec" else True
-    simple_graph_decoupage_str = ""
-    print(decoup)
+    simple_phon_decoupage_str = ""
     for j in range(len(decoup)):
         if decoup[j][0] != "phon_echec":
-            simple_graph_decoupage_str += trans[j]
-            if len(unicodedata.combining(decoup[j][2])) > 1:     #to correct Hugo
-                print("continued", decoup[j][2], len(decoup[j][2]))
-                continue
-            simple_graph_decoupage_str += "|"
+            combined_count = 0
+            for decomposed_letters in decoup[j][2]:
+                if unicodedata.combining(decomposed_letters) > 0:
+                    combined_count += 1
 
-    print (len(decoup), simple_graph_decoupage_str)
-    connected_lexique.append((word, trans, phon, types, successful_decoup, graph_decoupage_str, phon_decoupage_str, simple_graph_decoupage_str))
+            if simple_phon_decoupage_str != "":
+                simple_phon_decoupage_str += "|"
+            
+            for char_count in range(len(decoup[j][2]) - combined_count):
+                simple_phon_decoupage_str += trans[j+char_count]
+
+
+    connected_lexique.append((word, trans, phon, types, successful_decoup, graph_decoupage_str, phon_decoupage_str, simple_phon_decoupage_str))
     
     if decoup[0][0] == "phon_echec":
         nbr_fails += 1
         fails.append(word)
         decoup[0] =  tuple(('phon_echec', '', ''))
         
-    if i >= 200:  # Limit output for demonstration
-        break
 
 
 x=0
 dash = 0
+space = 0
 for fail_word in fails:
     if 'x' in fail_word:
         x += 1
     if '-' in fail_word:
         dash += 1
+    if ' ' in fail_word:
+        space += 1
 print(f"Number of failing words: {nbr_fails}")
 print(f"Number of failing words containing 'x': {x}")
 print(f"Number of failing words containing '-': {dash}")
+print(f"Number of failing words containing ' ': {space}")
 
 #save connected lexique to csv file
 with open("quiz/phonetic_data/lexique_phonetique_connected.csv", mode="w", encoding='utf-8') as connected_file:
-    for word, trans, phon, types, successful_decoup, phon_decoup, graph_decoup, simple_graph_decoup in connected_lexique:
-        connected_file.write(f"{word},{trans},{phon},{types},{successful_decoup},{graph_decoup},{phon_decoup},{simple_graph_decoup}\n")
+    for word, trans, phon, types, successful_decoup, graph_decoup, simple_phon_decoup, phon_decoup, in connected_lexique:
+        connected_file.write(f"{word},{trans},{phon},{types},{successful_decoup},{graph_decoup},{phon_decoup},{simple_phon_decoup}\n")
