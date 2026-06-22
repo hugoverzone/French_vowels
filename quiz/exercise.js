@@ -1,0 +1,635 @@
+import { decodeQrStringToList, extractTokenFromUrl } from './URL_functions.js';
+
+const CSV_PATHS = [
+  new URL('./phonetic_data/lexique_phonetique_connected.csv', import.meta.url).href,
+  new URL('./phonetic_data/lexique_phonetique.csv', import.meta.url).href,
+  new URL('../phonetic_data/lexique_phonetique_connected.csv', import.meta.url).href,
+  new URL('../phonetic_data/lexique_phonetique.csv', import.meta.url).href
+];
+const TRIANGLE_VOWELS_PATHS = [new URL('./JSON', import.meta.url).href];
+const VOWEL_SOUNDS = ['o', 'oe', 'è', 'eu', 'au', 'é', 'ou', 'u', 'i', 'a', 'an', 'on', 'in'];
+const TIMINGS = {
+  incorrectFlashMs: 1000,
+  correctAdvanceMs: 700,
+  finalAdvanceMs: 2600
+};
+
+const elements = {
+  exercisePanel: document.getElementById('exercise-panel'),
+  exerciseWord: document.getElementById('exercise-word'),
+  exerciseCompletionFill: document.getElementById('exercise-completion-fill'),
+  exercisePhonetic: document.getElementById('exercise-phonetic'),
+  exerciseProgress: document.getElementById('exercise-progress'),
+  exerciseScore: document.getElementById('exercise-score'),
+  exerciseFeedback: document.getElementById('exercise-feedback'),
+  exerciseSpeak: document.getElementById('exercise-speak'),
+  exerciseNext: document.getElementById('exercise-next'),
+  exerciseReplay: document.getElementById('exercise-replay'),
+  vowelButtons: [...document.querySelectorAll('.vowel')]
+};
+
+let lexiquePromise = null;
+let vowelMapPromise = null;
+let completionAdvanceTimer = null;
+let completionFlashTimer = null;
+
+const exerciseState = {
+  items: [],
+  index: 0,
+  correct: 0,
+  locked: false
+};
+
+function play(sound) {
+  const audioPath = '../assets/audio/vowels_fonetix_without_example/';
+  const audio = new Audio(audioPath + sound + '.mp3');
+  audio.play();
+}
+
+window.play = play;
+
+elements.vowelButtons.forEach((button, index) => {
+  button.dataset.sound = VOWEL_SOUNDS[index] || '';
+});
+
+function splitSegments(value) {
+  if (!value) {
+    return [];
+  }
+
+  return String(value)
+    .split('|')
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+}
+
+function parseCsvRow(line) {
+  const columns = line.split(',').map((value) => value.trim());
+  const [
+    word = '',
+    phonetic = '',
+    pronunciation = '',
+    partOfSpeech = '',
+    segmentation = '',
+    wordSegments = '',
+    simplifiedSegments = '',
+    phoneticSegments = ''
+  ] = columns;
+
+  return {
+    word,
+    phonetic,
+    pronunciation,
+    partOfSpeech,
+    segmentation: /^true$/i.test(segmentation),
+    wordSegments: splitSegments(wordSegments),
+    simplifiedSegments: splitSegments(simplifiedSegments),
+    phoneticSegments: splitSegments(phoneticSegments)
+  };
+}
+
+async function fetchTextFromCandidates(paths, resourceLabel) {
+  let lastError = null;
+
+  for (const path of paths) {
+    try {
+      const response = await fetch(path);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      return await response.text();
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  const details = lastError ? ` (${lastError.message})` : '';
+  throw new Error(`Impossible de charger ${resourceLabel}${details}`);
+}
+
+async function fetchJsonFromCandidates(paths, resourceLabel) {
+  const text = await fetchTextFromCandidates(paths, resourceLabel);
+  return JSON.parse(text);
+}
+
+async function loadTriangleVowelMap() {
+  if (!vowelMapPromise) {
+    vowelMapPromise = fetchJsonFromCandidates(TRIANGLE_VOWELS_PATHS, 'la table phonétique').then((data) => {
+      const phoneticToSound = new Map();
+      const allowedSounds = new Set(VOWEL_SOUNDS);
+
+      (data.vowels || []).forEach((entry) => {
+        if (!allowedSounds.has(entry.french)) {
+          return;
+        }
+
+        (entry.phonetic || []).forEach((token) => {
+          phoneticToSound.set(token, entry.french);
+        });
+      });
+
+      return phoneticToSound;
+    });
+  }
+
+  return vowelMapPromise;
+}
+
+async function loadLexiqueRows() {
+  if (!lexiquePromise) {
+    lexiquePromise = fetchTextFromCandidates(CSV_PATHS, 'le CSV lexique_phonetique_connected.csv').then((text) => {
+      const rowToEntry = new Map();
+      const wordToRow = new Map();
+      const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+
+      lines.forEach((line, index) => {
+        const entry = parseCsvRow(line);
+        const rowNumber = index + 1;
+        rowToEntry.set(rowNumber, entry);
+
+        if (!wordToRow.has(entry.word)) {
+          wordToRow.set(entry.word, rowNumber);
+        }
+      });
+
+      return { rowToEntry, wordToRow };
+    });
+  }
+
+  return lexiquePromise;
+}
+
+function inferSoundsFromPhonetic(phoneticCode, phoneticToSound) {
+  if (!phoneticCode || !phoneticToSound) {
+    return [];
+  }
+
+  return [...phoneticCode]
+    .map((token) => phoneticToSound.get(token) || phoneticToSound.get(token.toUpperCase()) || phoneticToSound.get(token.toLowerCase()))
+    .filter(Boolean);
+}
+
+function lookupSegmentSound(segment, phoneticToSound) {
+  if (!segment || !phoneticToSound) {
+    return '';
+  }
+
+  const candidates = [segment, segment.toLowerCase(), segment.toUpperCase()];
+
+  for (const candidate of candidates) {
+    const sound = phoneticToSound.get(candidate);
+    if (sound) {
+      return sound;
+    }
+  }
+
+  return '';
+}
+
+function buildTargetSegments(entry, phoneticToSound) {
+  let useConnectedSegmentation = entry.segmentation && entry.wordSegments.length > 0 && entry.simplifiedSegments.length > 0;
+  const displaySegments = useConnectedSegmentation ? entry.wordSegments : [...entry.word];
+  const targetSounds = [];
+  const targetSegmentIndexes = [];
+
+  if (useConnectedSegmentation) {
+    const segmentCount = Math.min(entry.wordSegments.length, entry.simplifiedSegments.length);
+
+    for (let index = 0; index < segmentCount; index += 1) {
+      const sound = lookupSegmentSound(entry.simplifiedSegments[index], phoneticToSound);
+      if (!sound) {
+        continue;
+      }
+
+      targetSounds.push(sound);
+      targetSegmentIndexes.push(index);
+    }
+
+    if (!targetSounds.length) {
+      useConnectedSegmentation = false;
+    }
+  } else {
+    const inferredSounds = inferSoundsFromPhonetic(entry.phonetic, phoneticToSound);
+
+    inferredSounds.forEach((sound, index) => {
+      targetSounds.push(sound);
+
+      if (!displaySegments.length) {
+        targetSegmentIndexes.push(0);
+        return;
+      }
+
+      const ratio = (index + 1) / Math.max(1, inferredSounds.length);
+      const targetIndex = Math.min(displaySegments.length - 1, Math.max(0, Math.ceil(ratio * displaySegments.length) - 1));
+      targetSegmentIndexes.push(targetIndex);
+    });
+  }
+
+  if (!useConnectedSegmentation && !targetSounds.length) {
+    const inferredSounds = inferSoundsFromPhonetic(entry.phonetic, phoneticToSound);
+
+    inferredSounds.forEach((sound, index) => {
+      targetSounds.push(sound);
+
+      if (!displaySegments.length) {
+        targetSegmentIndexes.push(0);
+        return;
+      }
+
+      const ratio = (index + 1) / Math.max(1, inferredSounds.length);
+      const targetIndex = Math.min(displaySegments.length - 1, Math.max(0, Math.ceil(ratio * displaySegments.length) - 1));
+      targetSegmentIndexes.push(targetIndex);
+    });
+  }
+
+  return {
+    displaySegments,
+    targetSounds,
+    targetSegmentIndexes,
+    useConnectedSegmentation
+  };
+}
+
+function getCurrentItem() {
+  return exerciseState.items[exerciseState.index];
+}
+
+function getCurrentTargetSound(item) {
+  return item?.targetSounds?.[item.soundIndex] || '';
+}
+
+function clearCompletionTimers() {
+  if (completionAdvanceTimer) {
+    window.clearTimeout(completionAdvanceTimer);
+    completionAdvanceTimer = null;
+  }
+
+  if (completionFlashTimer) {
+    window.clearTimeout(completionFlashTimer);
+    completionFlashTimer = null;
+  }
+}
+
+function getCompletedSegmentCount(item) {
+  if (!item || !item.displaySegments.length) {
+    return 0;
+  }
+
+  if (item.useConnectedSegmentation) {
+    if (item.soundIndex <= 0) {
+      return 0;
+    }
+
+    if (item.soundIndex >= item.targetSegmentIndexes.length) {
+      return item.displaySegments.length;
+    }
+
+    const lastCompletedIndex = item.targetSegmentIndexes[item.soundIndex - 1];
+    return typeof lastCompletedIndex === 'number' ? Math.min(item.displaySegments.length, lastCompletedIndex + 1) : 0;
+  }
+
+  if (!item.targetSounds.length) {
+    return 0;
+  }
+
+  return Math.min(item.displaySegments.length, Math.floor((item.soundIndex / item.targetSounds.length) * item.displaySegments.length));
+}
+
+function getActiveSegmentRange(item) {
+  if (!item || !item.displaySegments.length) {
+    return [0, 0];
+  }
+
+  if (item.useConnectedSegmentation) {
+    const activeIndex = item.targetSegmentIndexes[item.soundIndex];
+    if (typeof activeIndex === 'number') {
+      return [activeIndex, activeIndex];
+    }
+
+    return [item.displaySegments.length - 1, item.displaySegments.length - 1];
+  }
+
+  if (!item.targetSounds.length) {
+    return [0, 0];
+  }
+
+  const start = Math.min(item.displaySegments.length - 1, Math.floor((item.soundIndex / item.targetSounds.length) * item.displaySegments.length));
+  const span = Math.max(1, Math.ceil(item.displaySegments.length / item.targetSounds.length));
+  return [start, Math.min(item.displaySegments.length - 1, start + span - 1)];
+}
+
+function updateCompletionBar(item) {
+  if (!elements.exerciseCompletionFill) {
+    return;
+  }
+
+  const segments = item?.displaySegments || [];
+
+  if (!segments.length) {
+    elements.exerciseCompletionFill.style.width = '0%';
+    elements.exerciseCompletionFill.classList.remove('is-error');
+    return;
+  }
+
+  const completedSegmentCount = getCompletedSegmentCount(item);
+  const percentage = Math.max(0, Math.min(100, (completedSegmentCount / segments.length) * 100));
+  elements.exerciseCompletionFill.style.width = `${percentage}%`;
+  elements.exerciseCompletionFill.classList.toggle('is-error', Boolean(item?.flashRange));
+}
+
+function renderWordDisplay(item) {
+  const segments = item?.displaySegments || [];
+  const completedSegmentCount = getCompletedSegmentCount(item);
+  const [flashStart, flashEnd] = item?.flashRange || [-1, -1];
+  const [missedStart, missedEnd] = item?.missedRange || [-1, -1];
+
+  elements.exerciseWord.replaceChildren();
+
+  if (!segments.length) {
+    elements.exerciseWord.textContent = item?.word || '';
+    elements.exerciseWord.dataset.state = item ? 'plain' : '';
+    return;
+  }
+
+  segments.forEach((segment, index) => {
+    const span = document.createElement('span');
+    span.className = 'exercise-word-segment';
+    span.textContent = segment;
+
+    if (index < completedSegmentCount) {
+      span.classList.add('is-complete');
+    } else if (item && index >= flashStart && index <= flashEnd) {
+      span.classList.add('is-error');
+    } else if (item && index >= missedStart && index <= missedEnd) {
+      span.classList.add('is-muted');
+    } else {
+      span.classList.add('is-pending');
+    }
+
+    elements.exerciseWord.appendChild(span);
+  });
+
+  elements.exerciseWord.dataset.state = completedSegmentCount >= segments.length ? 'complete' : 'active';
+}
+
+function updateExerciseProgress(item) {
+  if (!item) {
+    elements.exerciseProgress.textContent = '0 / 0';
+    return;
+  }
+
+  const soundProgress = item.soundIndex >= item.targetSounds.length && item.targetSounds.length > 0
+    ? `${item.targetSounds.length} / ${item.targetSounds.length}`
+    : `${item.soundIndex + 1} / ${Math.max(1, item.targetSounds.length)}`;
+
+  elements.exerciseProgress.textContent = `Mot ${exerciseState.index + 1} / ${exerciseState.items.length} · Son ${soundProgress}`;
+}
+
+function setExerciseFeedback(message, tone = '') {
+  elements.exerciseFeedback.textContent = message;
+  elements.exerciseFeedback.classList.remove('correct', 'incorrect');
+
+  if (tone) {
+    elements.exerciseFeedback.classList.add(tone);
+  }
+}
+
+function speakCurrentWord() {
+  const item = getCurrentItem();
+  const word = item?.word || elements.exerciseWord.textContent.trim();
+
+  if (!word || word === 'Aucun exercice chargé.' || word === 'En attente du jeton...') {
+    setExerciseFeedback('Aucun mot à lire pour le moment.', 'incorrect');
+    return;
+  }
+
+  if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
+    setExerciseFeedback('La synthèse vocale n’est pas prise en charge dans ce navigateur.', 'incorrect');
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(word);
+  utterance.lang = 'fr-FR';
+  window.speechSynthesis.speak(utterance);
+}
+
+function renderExerciseItem(preserveFeedback = false) {
+  const item = getCurrentItem();
+
+  if (!item) {
+    elements.exerciseWord.textContent = 'Aucun exercice chargé.';
+    elements.exerciseWord.dataset.state = '';
+    elements.exercisePhonetic.textContent = 'Ouvrez une URL contenant T=... pour commencer.';
+    elements.exerciseScore.textContent = 'Réussites : 0';
+    elements.exerciseNext.classList.add('hidden');
+    updateCompletionBar(null);
+    if (!preserveFeedback) {
+      setExerciseFeedback('', '');
+    }
+    return;
+  }
+
+  renderWordDisplay(item);
+  updateCompletionBar(item);
+  elements.exercisePhonetic.textContent = item.phonetic;
+  elements.exerciseScore.textContent = `Réussites : ${exerciseState.correct}`;
+  elements.exerciseNext.classList.add('hidden');
+  updateExerciseProgress(item);
+
+  if (!item.targetSounds.length) {
+    if (!preserveFeedback) {
+      setExerciseFeedback("Aucun son vocalique n'a pu être déduit pour cette ligne. Utilisez Mot suivant pour continuer.", 'incorrect');
+    }
+    elements.exerciseNext.classList.remove('hidden');
+    return;
+  }
+
+  if (item.soundIndex >= item.targetSounds.length) {
+    if (!preserveFeedback) {
+      setExerciseFeedback('Mot terminé. Passage au suivant en cours...', 'correct');
+    }
+    return;
+  }
+
+  if (!preserveFeedback) {
+    setExerciseFeedback(`Cliquez sur la voyelle qui correspond au son ${item.soundIndex + 1} / ${item.targetSounds.length} de ce mot.`, '');
+  }
+}
+
+function finishExercise() {
+  clearCompletionTimers();
+  elements.exerciseWord.textContent = '';
+  elements.exerciseWord.dataset.state = '';
+  elements.exercisePhonetic.textContent = 'Toutes les lignes demandées ont été affichées.';
+  updateExerciseProgress(null);
+  elements.exerciseScore.textContent = `Réussites : ${exerciseState.correct}`;
+  elements.exerciseNext.classList.add('hidden');
+  elements.exerciseReplay.classList.remove('hidden');
+  updateCompletionBar(null);
+  setExerciseFeedback('Félicitations ! Exercice terminé.', 'correct');
+}
+
+function advanceExercise() {
+  clearCompletionTimers();
+  exerciseState.index += 1;
+  exerciseState.locked = false;
+
+  if (exerciseState.index >= exerciseState.items.length) {
+    finishExercise();
+    return;
+  }
+
+  renderExerciseItem();
+}
+
+function buildExerciseItem(entry, row, phoneticToSound) {
+  const targetSegments = buildTargetSegments(entry, phoneticToSound);
+
+  return {
+    row,
+    word: entry.word,
+    phonetic: entry.phonetic,
+    pronunciation: entry.pronunciation,
+    partOfSpeech: entry.partOfSpeech,
+    segmentation: entry.segmentation,
+    displaySegments: targetSegments.displaySegments,
+    targetSounds: targetSegments.targetSounds,
+    targetSegmentIndexes: targetSegments.targetSegmentIndexes,
+    useConnectedSegmentation: targetSegments.useConnectedSegmentation,
+    soundIndex: 0,
+    flashRange: null,
+    missedRange: null
+  };
+}
+
+function handleVowelSelection(sound) {
+  const item = getCurrentItem();
+  const currentTargetSound = getCurrentTargetSound(item);
+
+  if (!item || exerciseState.locked) {
+    return;
+  }
+
+  if (!currentTargetSound) {
+    setExerciseFeedback('Cette ligne n’a pas de son cible. Utilisez Mot suivant pour continuer.', 'incorrect');
+    return;
+  }
+
+  if (sound === currentTargetSound) {
+    exerciseState.correct += 1;
+    item.soundIndex += 1;
+    exerciseState.locked = true;
+    clearCompletionTimers();
+    delete item.flashRange;
+    delete item.missedRange;
+    renderWordDisplay(item);
+    updateCompletionBar(item);
+    elements.exerciseScore.textContent = `Réussites : ${exerciseState.correct}`;
+    elements.exerciseNext.classList.remove('hidden');
+
+    if (item.soundIndex >= item.targetSounds.length) {
+      setExerciseFeedback(`Bien joué. ${item.word} est terminé.`, 'correct');
+      completionAdvanceTimer = window.setTimeout(() => {
+        if (exerciseState.locked) {
+          advanceExercise();
+        }
+      }, TIMINGS.finalAdvanceMs);
+      return;
+    }
+
+    setExerciseFeedback(`Bien joué. Son ${item.soundIndex} trouvé pour ${item.word}.`, 'correct');
+    completionAdvanceTimer = window.setTimeout(() => {
+      if (!exerciseState.locked) {
+        return;
+      }
+
+      exerciseState.locked = false;
+      renderExerciseItem();
+    }, TIMINGS.correctAdvanceMs);
+    return;
+  }
+
+  clearCompletionTimers();
+  const [flashStart, flashEnd] = getActiveSegmentRange(item);
+  item.flashRange = [flashStart, flashEnd];
+  delete item.missedRange;
+  renderWordDisplay(item);
+  updateCompletionBar(item);
+  setExerciseFeedback(`Pas tout à fait. Réessayez le son ${item.soundIndex + 1} / ${item.targetSounds.length} pour ${item.word}.`, 'incorrect');
+
+  completionFlashTimer = window.setTimeout(() => {
+    delete item.flashRange;
+    item.missedRange = [flashStart, flashEnd];
+    renderWordDisplay(item);
+    updateCompletionBar(item);
+    completionFlashTimer = null;
+  }, TIMINGS.incorrectFlashMs);
+}
+
+async function initExercise() {
+  const payload = extractTokenFromUrl(window.location.href);
+
+  if (!payload) {
+    elements.exercisePanel.classList.add('hidden');
+    return;
+  }
+
+  try {
+    const rows = decodeQrStringToList(payload);
+    let rowToEntry;
+    let phoneticToSound;
+
+    try {
+      ({ rowToEntry } = await loadLexiqueRows());
+    } catch (error) {
+      throw new Error(`Le CSV n'a pas pu être chargé: ${error.message}`);
+    }
+
+    try {
+      phoneticToSound = await loadTriangleVowelMap();
+    } catch (error) {
+      throw new Error(`La table phonétique n'a pas pu être chargée: ${error.message}`);
+    }
+
+    exerciseState.items = rows
+      .map((row) => {
+        const entry = rowToEntry.get(row);
+        if (!entry) {
+          return null;
+        }
+
+        return buildExerciseItem(entry, row, phoneticToSound);
+      })
+      .filter(Boolean);
+
+    if (!exerciseState.items.length) {
+      elements.exerciseWord.textContent = 'Aucune ligne correspondante trouvée.';
+      elements.exerciseWord.dataset.state = '';
+      elements.exercisePhonetic.textContent = 'Vérifiez le jeton dans l’URL.';
+      elements.exerciseProgress.textContent = '0 / 0';
+      elements.exerciseScore.textContent = 'Réussites : 0';
+      updateCompletionBar(null);
+      setExerciseFeedback('Le jeton fourni ne correspond à aucune entrée du CSV.', 'incorrect');
+      elements.exerciseNext.classList.add('hidden');
+      return;
+    }
+
+    renderExerciseItem();
+    elements.exerciseSpeak.addEventListener('click', speakCurrentWord);
+    elements.exerciseNext.addEventListener('click', advanceExercise);
+    elements.exerciseReplay.addEventListener('click', () => window.location.reload());
+    elements.vowelButtons.forEach((button) => {
+      button.addEventListener('click', () => handleVowelSelection(button.dataset.sound || ''));
+    });
+  } catch (error) {
+    elements.exerciseWord.textContent = 'Impossible de démarrer l’exercice.';
+    elements.exerciseWord.dataset.state = '';
+    elements.exercisePhonetic.textContent = error.message || 'Le chargement des données a échoué.';
+    setExerciseFeedback(error.message || 'Le chargement des données a échoué.', 'incorrect');
+  }
+}
+
+initExercise();
