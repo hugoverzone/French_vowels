@@ -401,7 +401,7 @@
                         const isValid = Boolean(payload && finalUrl && extractedToken === payload && decodedWords.length === decodedRows.length && decodedRows.length > 0);
                         const hasAttemptedEncoding = Boolean(payload || finalUrl);
 
-                        elements.userEncodingStatus.classList.remove('status-pending', 'status-valid', 'status-invalid');
+                        elements.userEncodingStatus.classList.remove('error', 'status-pending', 'status-valid', 'status-invalid');
 
                         if (!hasAttemptedEncoding) {
                             elements.userEncodingStatus.textContent = 'en attente';

@@ -1,6 +1,6 @@
-const BASE45_ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:';
+const BASE45_ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_$%*+-./:';
 const BASE45_LOOKUP = new Map([...BASE45_ALPHABET].map((character, index) => [character, index]));
-const TOKEN_PATTERN = /^[0-9A-Z $%*+\-./:]+$/;
+const TOKEN_PATTERN = /^[0-9A-Z_$%*+\-./:]+$/;
 
 function normalizeIntegerList(values) {
 	return [...new Set(
@@ -17,6 +17,22 @@ function toBase45Character(value) {
 
 function fromBase45Character(character) {
 	return BASE45_LOOKUP.get(character) ?? -1;
+}
+
+function normalizeTokenCandidate(value) {
+	if (!value) {
+		return '';
+	}
+
+	let decodedValue;
+
+	try {
+		decodedValue = decodeURIComponent(String(value));
+	} catch {
+		decodedValue = String(value);
+	}
+
+	return decodedValue.trim().toUpperCase();
 }
 
 function encodeUnsignedVarint(value) {
@@ -215,13 +231,13 @@ export function extractTokenFromUrl(sourceUrl = typeof window !== 'undefined' ? 
 	}
 
 	const queryToken = url.searchParams.get('T');
-	const queryValue = queryToken ? queryToken.trim().toUpperCase() : '';
+	const queryValue = normalizeTokenCandidate(queryToken);
 	if (TOKEN_PATTERN.test(queryValue)) {
 		return queryValue;
 	}
 
 	if (url.hash.startsWith('#')) {
-		const hashValue = url.hash.slice(1).trim().toUpperCase();
+		const hashValue = normalizeTokenCandidate(url.hash.slice(1));
 		const hashPrefix = 'T=';
 
 		if (hashValue.startsWith(hashPrefix)) {
@@ -235,7 +251,7 @@ export function extractTokenFromUrl(sourceUrl = typeof window !== 'undefined' ? 
 	const pathSegments = url.pathname.split('/').filter(Boolean);
 	const lastSegment = pathSegments[pathSegments.length - 1] || '';
 	if (lastSegment && !/\.html?$/i.test(lastSegment)) {
-		const pathToken = lastSegment.trim().toUpperCase();
+		const pathToken = normalizeTokenCandidate(lastSegment);
 		if (TOKEN_PATTERN.test(pathToken)) {
 			return pathToken;
 		}
