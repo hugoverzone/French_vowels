@@ -205,8 +205,8 @@ text {
   margin: 0 auto;
 }
 .quiz-creator .status-pending { color: var(--muted); }
-.quiz-creator .status-valid { color: #0d7a3a; }
-.quiz-creator .status-invalid { color: #a02f2f; }
+.quiz-creator .status.status-valid { color: #0d7a3a; }
+.quiz-creator .status.status-invalid { color: #a02f2f; }
 .quiz-creator .hero { display: grid; gap: 12px; margin-bottom: 24px; }
 .quiz-creator .eyebrow { letter-spacing: 0.14em; text-transform: uppercase; font-size: 0.76rem; color: var(--accent-2); font-weight: 700; }
 .quiz-creator h1 { margin: 0; font-size: clamp(2rem, 4vw, 3.3rem); line-height: 1.05; }
