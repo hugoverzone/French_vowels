@@ -225,9 +225,9 @@
 
                         // creator/index.html -> index.html at parent folder.
                         const nextPath = path
-                            .replace(/\/creator\/index\.html$/i, '/index.html')
-                            .replace(/\/creator\/$/i, '/index.html')
-                            .replace(/\/creator$/i, '/index.html');
+                            .replace(/\/creator\/$/i, '/')
+                            .replace(/\/creator\/$/i, '/')
+                            .replace(/\/creator$/i, '/');
 
                         url.pathname = nextPath;
                         url.search = '';
@@ -331,6 +331,7 @@
 
                     function renderQrCode(url) {
                         elements.qrcode.innerHTML = '';
+                        url = url ? String(url).toUpperCase() : '';
                         elements.qrHint.textContent = url ? 'Code QR prêt.' : 'Aucun code QR pour le moment.';
 
                         if (!url) {
@@ -349,6 +350,7 @@
 
                     function renderUserQrCode(url) {
                         elements.userQrcode.innerHTML = '';
+                        url = url ? String(url).toUpperCase() : '';
                         elements.userQrHint.textContent = url ? 'Code QR prêt.' : 'Aucun code QR pour le moment.';
 
                         if (!url) {
@@ -372,8 +374,9 @@
                             return;
                         }
 
-                        elements.userShareUrlOutput.textContent = url;
-                        elements.userShareUrlOutput.href = url;
+                        const upper = String(url).toUpperCase();
+                        elements.userShareUrlOutput.textContent = upper;
+                        elements.userShareUrlOutput.href = upper;
                     }
 
                     function renderUserWordStatus(matches, missing) {

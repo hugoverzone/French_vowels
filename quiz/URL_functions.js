@@ -214,7 +214,7 @@ export function generateQrUrl(token, domain = typeof window !== 'undefined' ? wi
 	const url = new URL(resolvedBaseUrl, typeof window !== 'undefined' ? window.location.href : resolvedBaseUrl);
 	url.search = '';
 	url.hash = normalizedToken ? `T=${normalizedToken}` : '';
-	return url.toString();
+	return url.toString().toUpperCase();
 }
 
 export function extractTokenFromUrl(sourceUrl = typeof window !== 'undefined' ? window.location.href : '') {
