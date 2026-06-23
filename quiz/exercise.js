@@ -13,6 +13,7 @@ const TIMINGS = {
   correctAdvanceMs: 700,
   finalAdvanceMs: 2600
 };
+const COMPLETION_RING_ANIMATION_MS = 460;
 
 const elements = {
   exercisePanel: document.getElementById('exercise-panel'),
@@ -22,7 +23,6 @@ const elements = {
   exerciseSoundProgressValue: document.getElementById('exercise-sound-progress-value'),
   exerciseWordProgress: document.getElementById('exercise-word-progress'),
   exerciseWordProgressValue: document.getElementById('exercise-word-progress-value'),
-  exerciseScore: document.getElementById('exercise-score'),
   exerciseFeedback: document.getElementById('exercise-feedback'),
   exerciseSpeak: document.getElementById('exercise-speak'),
   exerciseReplay: document.getElementById('exercise-replay'),
@@ -33,6 +33,7 @@ let lexiquePromise = null;
 let vowelMapPromise = null;
 let completionAdvanceTimer = null;
 let completionFlashTimer = null;
+let progressRingAnimationTimers = new WeakMap();
 
 const exerciseState = {
   items: [],
@@ -267,17 +268,34 @@ function getCurrentTargetSound(item) {
   return item?.targetSounds?.[item.soundIndex] || '';
 }
 
-function setProgressRing(elementsSet, value, total) {
+function setProgressRing(elementsSet, value, total, animate = false) {
   const safeTotal = Math.max(0, total);
   const safeValue = Math.max(0, Math.min(value, safeTotal));
   const progress = safeTotal > 0 ? safeValue / safeTotal : 0;
   const displayText = safeTotal > 0 ? `${safeValue} / ${safeTotal}` : '0 / 0';
 
   if (elementsSet.ring) {
+    const previousTimer = progressRingAnimationTimers.get(elementsSet.ring);
+
+    if (previousTimer) {
+      window.clearTimeout(previousTimer);
+      progressRingAnimationTimers.delete(elementsSet.ring);
+    }
+
+    elementsSet.ring.classList.toggle('is-animating', Boolean(animate));
     elementsSet.ring.style.setProperty('--progress', String(progress));
     elementsSet.ring.setAttribute('aria-valuenow', String(safeValue));
     elementsSet.ring.setAttribute('aria-valuemax', String(safeTotal));
     elementsSet.ring.setAttribute('aria-valuetext', displayText);
+
+    if (animate) {
+      const timerId = window.setTimeout(() => {
+        elementsSet.ring.classList.remove('is-animating');
+        progressRingAnimationTimers.delete(elementsSet.ring);
+      }, COMPLETION_RING_ANIMATION_MS);
+
+      progressRingAnimationTimers.set(elementsSet.ring, timerId);
+    }
   }
 
   if (elementsSet.value) {
@@ -389,21 +407,25 @@ function renderWordDisplay(item) {
   elements.exerciseWord.dataset.state = completedSegmentCount >= segments.length ? 'complete' : 'active';
 }
 
-function updateExerciseProgress(item) {
+function updateExerciseProgress(item, options = {}) {
+  const { animateSound = false, animateWords = false } = options;
   const totalWords = exerciseState.items.length;
-  const completedWords = Math.min(exerciseState.index, totalWords);
+  const completedWords = Math.min(
+    totalWords,
+    exerciseState.index + (item && item.targetSounds.length > 0 && item.soundIndex >= item.targetSounds.length ? 1 : 0)
+  );
   const soundTotal = item ? item.targetSounds.length : 0;
   const soundProgress = item ? Math.min(item.soundIndex, soundTotal) : 0;
 
   setProgressRing({
     ring: elements.exerciseSoundProgress,
     value: elements.exerciseSoundProgressValue
-  }, soundProgress, soundTotal);
+  }, soundProgress, soundTotal, animateSound);
 
   setProgressRing({
     ring: elements.exerciseWordProgress,
     value: elements.exerciseWordProgressValue
-  }, completedWords, totalWords);
+  }, completedWords, totalWords, animateWords);
 }
 
 function setExerciseFeedback(message, tone = '') {
@@ -442,7 +464,6 @@ function renderExerciseItem(preserveFeedback = false) {
     elements.exerciseWord.textContent = 'Aucun exercice chargé.';
     elements.exerciseWord.dataset.state = '';
     setExercisePhoneticText('Ouvrez une URL contenant T=... pour commencer.');
-    elements.exerciseScore.textContent = 'Réussites : 0';
     if (!preserveFeedback) {
       setExerciseFeedback('', '');
     }
@@ -451,7 +472,6 @@ function renderExerciseItem(preserveFeedback = false) {
 
   renderWordDisplay(item);
   setExercisePhoneticText(item.phonetic);
-  elements.exerciseScore.textContent = `Réussites : ${exerciseState.correct}`;
   updateExerciseProgress(item);
 
   if (!item.targetSounds.length) {
@@ -485,7 +505,6 @@ function finishExercise() {
   elements.exerciseWord.dataset.state = '';
   setExercisePhoneticText('Toutes les lignes demandées ont été affichées.');
   updateExerciseProgress(null);
-  elements.exerciseScore.textContent = `Réussites : ${exerciseState.correct}`;
   elements.exerciseReplay.classList.remove('hidden');
   setExerciseFeedback('Félicitations ! Exercice terminé.', 'correct');
 }
@@ -546,7 +565,10 @@ function handleVowelSelection(sound) {
     delete item.flashRange;
     delete item.missedRange;
     renderWordDisplay(item);
-    elements.exerciseScore.textContent = `Réussites : ${exerciseState.correct}`;
+    updateExerciseProgress(item, {
+      animateSound: true,
+      animateWords: item.soundIndex >= item.targetSounds.length
+    });
 
     if (item.soundIndex >= item.targetSounds.length) {
       setExerciseFeedback(`Bien joué. ${item.word} est terminé.`, 'correct');
@@ -626,7 +648,6 @@ async function initExercise() {
       elements.exerciseWord.dataset.state = '';
       setExercisePhoneticText('Vérifiez le jeton dans l’URL.');
       updateExerciseProgress(null);
-      elements.exerciseScore.textContent = 'Réussites : 0';
       setExerciseFeedback('Le jeton fourni ne correspond à aucune entrée du CSV.', 'incorrect');
       return;
     }
