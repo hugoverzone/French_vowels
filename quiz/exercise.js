@@ -15,9 +15,9 @@ const TIMINGS = {
 };
 const COMPLETION_RING_ANIMATION_MS = 460;
 const COMPLETION_TRANSFER_DELAY_MS = 520;
-const COMPLETION_FIREWORK_DURATION_MS = 3200;
-const COMPLETION_FIREWORK_COUNT = 9;
-const COMPLETION_FIREWORK_SPARKS = 10;
+const COMPLETION_FIREWORK_DURATION_MS = 8000;
+const COMPLETION_FIREWORK_COUNT = 12;
+const COMPLETION_FIREWORK_SPARKS = 14;
 
 const elements = {
   exercisePanel: document.getElementById('exercise-panel'),
@@ -96,10 +96,10 @@ function launchCompletionFireworks() {
     const firework = document.createElement('div');
     firework.className = 'completion-firework';
 
-    const x = 12 + Math.random() * 76;
-    const y = 14 + Math.random() * 62;
+    const x = 8 + Math.random() * 84;
+    const y = 10 + Math.random() * 70;
     const hue = Math.floor(Math.random() * 360);
-    const delay = Math.random() * 900;
+    const delay = Math.random() * 650;
 
     firework.style.setProperty('--firework-x', `${x}vw`);
     firework.style.setProperty('--firework-y', `${y}vh`);
@@ -110,15 +110,15 @@ function launchCompletionFireworks() {
       const spark = document.createElement('span');
       spark.className = 'completion-firework__spark';
 
-      const angle = (360 / COMPLETION_FIREWORK_SPARKS) * sparkIndex + Math.random() * 12;
-      const distance = 42 + Math.random() * 64;
+      const angle = (360 / COMPLETION_FIREWORK_SPARKS) * sparkIndex + Math.random() * 16;
+      const distance = 140 + Math.random() * 180;
       const sparkDelay = delay + Math.random() * 120;
 
       spark.style.setProperty('--spark-angle', `${angle}deg`);
       spark.style.setProperty('--spark-distance', `${distance}`);
       spark.style.setProperty('--spark-delay', `${sparkDelay}ms`);
       spark.style.setProperty('--spark-hue', `${(hue + sparkIndex * 9) % 360}`);
-      spark.style.setProperty('--spark-size', `${3 + Math.random() * 3}px`);
+      spark.style.setProperty('--spark-size', `${9 + Math.random() * 8}px`);
 
       firework.appendChild(spark);
     }
