@@ -1,0 +1,17 @@
+{
+  "vowels": [
+    {"french": "a", "phonetic": ["a"]},
+    {"french": "an", "phonetic": ["@"]},
+    {"french": "au", "phonetic": ["O"]},
+    {"french": "é", "phonetic": ["e"]},
+    {"french": "è", "phonetic": ["E"]},
+    {"french": "eu", "phonetic": ["2"]},
+    {"french": "i", "phonetic": ["i", "j", "ij"]},
+    {"french": "in", "phonetic": ["5", "1"]},
+    {"french": "o", "phonetic": ["o"]},
+    {"french": "oe", "phonetic": ["°", "9"]},
+    {"french": "on", "phonetic": ["§"]},
+    {"french": "ou", "phonetic": ["u","w"]},
+    {"french": "u", "phonetic": ["y", "8"]}
+  ]
+}

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Le Triangle des Voyelles</title>
+    <link rel="stylesheet" href="../styles.css">
+  </head>
+  <body>
+    <section class="exercise-panel" id="exercise-panel">
+      <h2>Quiz - Triangle des voyelles</h2>
+      <div class="exercise-meta">
+        <div class="exercise-card exercise-card--word">
+          <div class="exercise-word" id="exercise-word">En attente...</div>
+        </div>
+        <div class="exercise-card exercise-card--progress">
+          <div class="exercise-progress-grid" aria-label="Progression de l'exercice">
+            <div class="progress-ring" id="exercise-sound-progress" style="--progress: 0;" role="progressbar" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 / 0">
+              <div class="progress-ring__inner">
+                <span class="progress-ring__value" id="exercise-sound-progress-value">0%</span>
+                <span class="progress-ring__label">Son</span>
+              </div>
+            </div>
+            <div class="progress-ring" id="exercise-word-progress" style="--progress: 0;" role="progressbar" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 / 0">
+              <div class="progress-ring__inner">
+                <span class="progress-ring__value" id="exercise-word-progress-value">0%</span>
+                <span class="progress-ring__label">Mots</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="exercise-button secondary exercise-speak" id="exercise-speak" type="button" aria-label="Écouter le mot">
+          <span>Écouter<br>le mot</span>
+        </button>
+      </div>
+      <div class="exercise-feedback" id="exercise-feedback" aria-live="polite"></div>
+      <div class="exercise-footer">
+        <button class="exercise-button secondary hidden" id="exercise-replay" type="button">Rejouer</button>
+      </div>
+    </section>
+
+    <svg viewBox="0 0 300 400" preserveAspectRatio="xMidYMid meet">
+      <g class="triangle-inner">
+      <line x1="150" y1="80" x2="30" y2="370" class="guide"/>
+      <line x1="150" y1="80" x2="270" y2="370" class="guide"/>
+      <line x1="30" y1="370" x2="270" y2="370" class="guide"/>
+      <line x1="150" y1="80" x2="150" y2="370" class="guide" />
+      <line x1="100" y1="195" x2="200" y2="195" class="guide" />
+      <line x1="70" y1="275" x2="230" y2="275" class="guide" />
+      <g onclick="play('o')" class="vowel">
+        <circle cx="100" cy="195" r="20" fill="#5dade2"/>
+      </g>
+      <g onclick="play('oe')" class="vowel">
+        <circle cx="150" cy="195" r="20" fill="#7ed957"/>
+      </g>
+      <g onclick="play('è')" class="vowel">
+        <circle cx="200" cy="195" r="20" fill="#ff7eb9"/>
+      </g>
+      <g onclick="play('eu')" class="vowel">
+        <circle cx="150" cy="275" r="20" fill="#00b894"/>
+      </g>
+      <g onclick="play('au')" class="vowel">
+        <circle cx="70" cy="275" r="20" fill="#4a6bd6"/>
+      </g>
+      <g onclick="play('é')" class="vowel">
+        <circle cx="230" cy="275" r="20" fill="#ff6f3c"/>
+      </g>
+      <g onclick="play('ou')" class="vowel">
+        <circle cx="30" cy="370" r="20" fill="#2ec4b6"/>
+      </g>
+      <g onclick="play('u')" class="vowel">
+        <circle cx="150" cy="370" r="20" fill="#ffd93d"/>
+      </g>
+      <g onclick="play('i')" class="vowel">
+        <circle cx="270" cy="370" r="20" fill="#ff4d4d"/>
+      </g>
+      <g onclick="play('a')" class="vowel">
+        <circle cx="150" cy="80" r="20" fill="#9b59b6"/>
+      </g>
+      <g onclick="play('an')" class="vowel">
+        <circle cx="150" cy="30" r="20" fill="#e6a8d7"/>
+      </g>
+      <g onclick="play('on')" class="vowel">
+        <circle cx="60" cy="130" r="20" fill="#adceea"/>
+      </g>
+      <g onclick="play('in')" class="vowel">
+        <circle cx="240" cy="130" r="20" fill="#f3b795"/>
+      </g>
+          </g>
+    </svg>
+    <footer class="attribution">
+      <p>Développé par <a href="https://hugo.verzone.ch" target="_blank" rel="noopener noreferrer">Hugo Verzone</a> | 
+        Concept du triangle des voyelles par <a href="https://wp.unil.ch/ficellesapprendre/sophia-smajlovic-1142/" target="_blank" rel="noopener noreferrer">Sophia Smajlovic (UNIL)</a> | 
+        Audio de prononciation provenant de <a href="https://fonetix.org/fr/etudier/ressources" target="_blank" rel="noopener noreferrer">Fonetix.org</a> |
+        Dictionaire phonétique provenant de <a href="http://www.lexique.org/" target="_blank" rel="noopener noreferrer">Lexique.org</a> |
+        Algorithme de segmentation phonétique par <a href="https://gricad-gitlab.univ-grenoble-alpes.fr/pedagogies-multimodales/phon2graph" target="_blank" rel="noopener noreferrer">Sylvain Coulange et Alexandre Do (UGA)</a></p>   
+      </footer>
+    <script type="module" src="./exercise.js"></script>
+  </body>
+</html>

@@ -1,0 +1,562 @@
+<!--encode word list in javascript-->
+
+<!-- convert URL into qrcode -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur QR des lignes du lexique</title>
+    <link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="quiz-creator mode-user">
+
+                <div class="view-toggle" role="tablist" aria-label="Mode d’affichage">
+                    <button type="button" id="adminViewButton" class="view-toggle-btn" aria-pressed="false">Admin</button>
+                    <button type="button" id="userViewButton" class="view-toggle-btn is-active" aria-pressed="true">User</button>
+                </div>
+
+<!-- input a list of french words -->
+
+                <main class="page">
+                    <section class="user-view user-only">
+                        <div class="card user-panel">
+                            <div class="card-inner">
+                                <h1>Créer un exercice avec le triangle des voyelles</h1>
+                                <p class="user-instructions">Saisissez des mots séparés par des virgules.</p>
+
+                                <div class="row compact-row">
+                                    <textarea id="userWords" placeholder="ex. maison, jeudi, aimer"></textarea>
+                                </div>
+
+                                <div class="actions single-action">
+                                    <button class="primary" id="userBuildButton">Créer le lien / QR</button>
+                                </div>
+
+                                <div class="user-statuses user-statuses-top">
+                                    <div class="user-status-card">
+                                        <strong>Validation des mots</strong>
+                                        <span id="userWordStatus" class="status">En attente.</span>
+                                    </div>
+
+                                    <div class="user-status-card">
+                                        <strong>Encodage / extraction</strong>
+                                        <span id="userEncodingStatus" class="status status-pending">en attente</span>
+                                    </div>
+                                </div>
+
+                                <div class="user-status-card user-link-card">
+                                    <strong>Lien généré</strong>
+                                    <a id="userShareUrlOutput" href="#" target="_blank" rel="noopener noreferrer">Aucune URL pour le moment.</a>
+                                </div>
+
+                                <div class="qr-box user-qr-box">
+                                    <div id="userQrcode"></div>
+                                    <div id="userQrHint" class="status">Aucun code QR pour le moment.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="hero admin-only">
+                        <div class="eyebrow">Lexique phonétique</div>
+                        <h1>Générez une URL QR Base45 à partir de mots français, puis décodez-la ensuite en mots.</h1>
+                        <p class="subhead">
+                            Cette page recherche chaque mot dans la première colonne de <strong>../phonetic_data/lexique_phonetique.csv</strong>,
+                            compresse les numéros de ligne correspondants dans un jeton Base45 compact, puis génère un QR code pour le lien final.
+                            Si la page est ouverte avec ce jeton déjà présent, elle décode les nombres et retrouve automatiquement les mots.
+                        </p>
+                    </section>
+
+                    <section class="grid admin-only">
+                        <div class="card">
+                            <div class="card-inner">
+                                <h2>Encoder les mots</h2>
+                                <p>Séparez les mots par des virgules. La correspondance est exacte avec la première colonne du CSV.</p>
+
+                                <div class="row">
+                                    <label for="frenchWords">Mots français</label>
+                                    <textarea id="frenchWords" placeholder="ex. maison, jeudi, aimer"></textarea>
+                                </div>
+
+                                <div class="row">
+                                    <label for="baseUrl">URL de la page triangle</label>
+                                    <input type="text" id="baseUrl" placeholder="../index.html">
+                                </div>
+
+                                <div class="actions">
+                                    <button class="primary" id="buildButton">Résoudre les mots et créer l’URL QR</button>
+                                    <button class="secondary" id="decodeButton">Décoder l’URL actuelle</button>
+                                    <button class="soft" id="fillCurrentButton">Utiliser cette page comme URL de base</button>
+                                </div>
+
+                                <div class="meta">
+                                    <div>
+                                        <strong>Jeton compact</strong>
+                                        <span id="payloadOutput">Aucun jeton pour le moment.</span>
+                                    </div>
+                                    <div>
+                                        <strong>URL de partage finale</strong>
+                                        <span id="shareUrlOutput">Aucune URL pour le moment.</span>
+                                    </div>
+                                    <div>
+                                        <strong>Jeton extrait</strong>
+                                        <span id="extractedTokenOutput">Aucun</span>
+                                    </div>
+                                    <div>
+                                        <strong>État</strong>
+                                        <span id="status" class="status">Prêt.</span>
+                                    </div>
+                                </div>
+
+                                <div class="output">
+                                    <div class="panel-surface">
+                                        <h2>Lignes résolues</h2>
+                                        <div id="rowsSummary" class="status">Saisissez des mots pour les résoudre.</div>
+                                        <div id="rowsTableWrap"></div>
+                                    </div>
+
+                                    <div class="panel-surface">
+                                        <h2>Mots récupérés</h2>
+                                        <div id="decodedSummary" class="status">Si l’URL contient déjà un jeton, les mots apparaîtront ici.</div>
+                                        <div id="decodedWords" class="word-list"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-inner">
+                                <h2>Code QR</h2>
+                                <p>Le code est généré à partir de l’URL finale, qui inclut le jeton Base45 compact en majuscules avec le fragment T=.</p>
+                            </div>
+                            <div class="qr-box">
+                                <div id="qrcode"></div>
+                                <div id="qrHint" class="status">Aucun code QR pour le moment.</div>
+                            </div>
+                        </div>
+                    </section>
+                </main>
+
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+                <script type="module">
+                    import {
+                        decodeQrStringToList,
+                        encodeListToQrString,
+                        extractTokenFromUrl,
+                        generateQrUrl
+                    } from "../URL_functions.js";
+
+                    const CSV_PATH = "../phonetic_data/lexique_phonetique.csv";
+                    const VIEW_STORAGE_KEY = 'quiz-creator-view-mode';
+
+                    let lexiquePromise = null;
+
+                    const elements = {
+                        adminViewButton: document.getElementById('adminViewButton'),
+                        userViewButton: document.getElementById('userViewButton'),
+                        userWords: document.getElementById('userWords'),
+                        userWordStatus: document.getElementById('userWordStatus'),
+                        userEncodingStatus: document.getElementById('userEncodingStatus'),
+                        userShareUrlOutput: document.getElementById('userShareUrlOutput'),
+                        userQrHint: document.getElementById('userQrHint'),
+                        userQrcode: document.getElementById('userQrcode'),
+                        userBuildButton: document.getElementById('userBuildButton'),
+                        frenchWords: document.getElementById('frenchWords'),
+                        baseUrl: document.getElementById('baseUrl'),
+                        payloadOutput: document.getElementById('payloadOutput'),
+                        shareUrlOutput: document.getElementById('shareUrlOutput'),
+                        extractedTokenOutput: document.getElementById('extractedTokenOutput'),
+                        status: document.getElementById('status'),
+                        rowsSummary: document.getElementById('rowsSummary'),
+                        rowsTableWrap: document.getElementById('rowsTableWrap'),
+                        decodedSummary: document.getElementById('decodedSummary'),
+                        decodedWords: document.getElementById('decodedWords'),
+                        qrHint: document.getElementById('qrHint'),
+                        qrcode: document.getElementById('qrcode')
+                    };
+
+                    function getSavedViewMode() {
+                        try {
+                            return window.localStorage.getItem(VIEW_STORAGE_KEY) || 'user';
+                        } catch {
+                            return 'user';
+                        }
+                    }
+
+                    function setViewMode(mode) {
+                        const resolvedMode = mode === 'admin' ? 'admin' : 'user';
+
+                        document.body.classList.toggle('mode-admin', resolvedMode === 'admin');
+                        document.body.classList.toggle('mode-user', resolvedMode === 'user');
+                        elements.adminViewButton.classList.toggle('is-active', resolvedMode === 'admin');
+                        elements.userViewButton.classList.toggle('is-active', resolvedMode === 'user');
+                        elements.adminViewButton.setAttribute('aria-pressed', String(resolvedMode === 'admin'));
+                        elements.userViewButton.setAttribute('aria-pressed', String(resolvedMode === 'user'));
+
+                        try {
+                            window.localStorage.setItem(VIEW_STORAGE_KEY, resolvedMode);
+                        } catch {
+                            // Ignore storage failures.
+                        }
+                    }
+
+                    function setStatus(message, isError = false) {
+                        elements.status.textContent = message;
+                        elements.status.classList.toggle('error', isError);
+                    }
+
+                    function normalizeWords(text) {
+                        return text
+                            .split(',')
+                            .map((word) => word.trim())
+                            .filter(Boolean);
+                    }
+
+                    function parseCsvRow(line) {
+                        const commaIndex = line.indexOf(',');
+                        return commaIndex === -1 ? line.trim() : line.slice(0, commaIndex).trim();
+                    }
+
+                    function getTrianglePageUrlFromCurrentPage() {
+                        const url = new URL(window.location.href);
+                        const path = url.pathname;
+
+                        // creator/index.html -> index.html at parent folder.
+                        const nextPath = path
+                            .replace(/\/creator\/index\.html$/i, '/index.html')
+                            .replace(/\/creator\/$/i, '/index.html')
+                            .replace(/\/creator$/i, '/index.html');
+
+                        url.pathname = nextPath;
+                        url.search = '';
+                        url.hash = '';
+                        return url.toString();
+                    }
+
+                    async function loadLexiqueMaps() {
+                        if (!lexiquePromise) {
+                            lexiquePromise = fetch(CSV_PATH)
+                                .then((response) => {
+                                    if (!response.ok) {
+                                        throw new Error(`Impossible de charger ${CSV_PATH}`);
+                                    }
+                                    return response.text();
+                                })
+                                .then((text) => {
+                                    const wordToRow = new Map();
+                                    const rowToWord = new Map();
+                                    const rows = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+
+                                    rows.forEach((line, index) => {
+                                        const word = parseCsvRow(line);
+                                        const rowNumber = index + 1;
+                                        if (!wordToRow.has(word)) {
+                                            wordToRow.set(word, rowNumber);
+                                        }
+                                        rowToWord.set(rowNumber, word);
+                                    });
+
+                                    return { wordToRow, rowToWord };
+                                });
+                        }
+
+                        return lexiquePromise;
+                    }
+
+                    function renderRowsTable(entries) {
+                        if (!entries.length) {
+                            elements.rowsTableWrap.innerHTML = '';
+                            elements.rowsSummary.textContent = 'Aucun mot ne correspond au CSV.';
+                            return;
+                        }
+
+                        const rows = entries
+                            .map((entry) => `
+                                <tr>
+                                    <td>${entry.word}</td>
+                                    <td>${entry.row}</td>
+                                    <td>${entry.status}</td>
+                                </tr>
+                            `)
+                            .join('');
+
+                        elements.rowsSummary.textContent = `${entries.length} mot(s) résolu(s).`;
+                        elements.rowsTableWrap.innerHTML = `
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Mot</th>
+                                        <th>Ligne</th>
+                                        <th>Résultat</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${rows}</tbody>
+                            </table>
+                        `;
+                    }
+
+                    function renderDecodedWords(rows, rowToWord) {
+                        if (!rows.length) {
+                            elements.decodedSummary.textContent = 'Aucun nombre n’a été décodé depuis l’URL.';
+                            elements.decodedWords.innerHTML = '';
+                            return;
+                        }
+
+                        const words = rows
+                            .map((row) => rowToWord.get(row))
+                            .filter(Boolean);
+
+                        elements.decodedSummary.textContent = `${rows.length} nombre(s) décodé(s) depuis l’URL.`;
+                        elements.decodedWords.innerHTML = words.length
+                            ? words.map((word) => `<span class="pill">${word}</span>`).join('')
+                            : '<span class="status error">Les lignes décodées ne correspondent à aucun mot.</span>';
+                    }
+
+                    function renderDecodedWordsFromSource(sourceUrl, rowToWord) {
+                        const payload = extractTokenFromUrl(sourceUrl);
+                        const rows = decodeQrStringToList(payload);
+
+                        elements.extractedTokenOutput.textContent = payload || 'Aucun';
+
+                        if (!payload) {
+                            elements.decodedSummary.textContent = 'Aucun jeton trouvé dans l’URL fournie.';
+                            elements.decodedWords.innerHTML = '';
+                            return;
+                        }
+
+                        renderDecodedWords(rows, rowToWord);
+                    }
+
+                    function renderQrCode(url) {
+                        elements.qrcode.innerHTML = '';
+                        elements.qrHint.textContent = url ? 'Code QR prêt.' : 'Aucun code QR pour le moment.';
+
+                        if (!url) {
+                            return;
+                        }
+
+                        new QRCode(elements.qrcode, {
+                            text: url,
+                            width: 220,
+                            height: 220,
+                            colorDark: '#1f1f1f',
+                            colorLight: '#ffffff',
+                            correctLevel: QRCode.CorrectLevel.M
+                        });
+                    }
+
+                    function renderUserQrCode(url) {
+                        elements.userQrcode.innerHTML = '';
+                        elements.userQrHint.textContent = url ? 'Code QR prêt.' : 'Aucun code QR pour le moment.';
+
+                        if (!url) {
+                            return;
+                        }
+
+                        new QRCode(elements.userQrcode, {
+                            text: url,
+                            width: 220,
+                            height: 220,
+                            colorDark: '#1f1f1f',
+                            colorLight: '#ffffff',
+                            correctLevel: QRCode.CorrectLevel.M
+                        });
+                    }
+
+                    function renderUserLink(url) {
+                        if (!url) {
+                            elements.userShareUrlOutput.textContent = 'Aucune URL pour le moment.';
+                            elements.userShareUrlOutput.removeAttribute('href');
+                            return;
+                        }
+
+                        elements.userShareUrlOutput.textContent = url;
+                        elements.userShareUrlOutput.href = url;
+                    }
+
+                    function renderUserWordStatus(matches, missing) {
+                        if (!matches.length && !missing.length) {
+                            elements.userWordStatus.textContent = 'En attente.';
+                            elements.userWordStatus.classList.remove('error');
+                            return;
+                        }
+
+                        if (missing.length) {
+                            elements.userWordStatus.textContent = `Manquants : ${missing.join(', ')}`;
+                            elements.userWordStatus.classList.add('error');
+                            return;
+                        }
+
+                        elements.userWordStatus.textContent = `${matches.length} mot(s) valide(s).`;
+                        elements.userWordStatus.classList.remove('error');
+                    }
+
+                    function renderUserEncodingStatus(payload, finalUrl, rowToWord) {
+                        const sourceUrl = finalUrl || window.location.href;
+                        const extractedToken = extractTokenFromUrl(sourceUrl);
+                        const decodedRows = decodeQrStringToList(extractedToken);
+                        const decodedWords = decodedRows.map((row) => rowToWord.get(row)).filter(Boolean);
+                        const isValid = Boolean(payload && finalUrl && extractedToken === payload && decodedWords.length === decodedRows.length && decodedRows.length > 0);
+                        const hasAttemptedEncoding = Boolean(payload || finalUrl);
+
+                        elements.userEncodingStatus.classList.remove('error', 'status-pending', 'status-valid', 'status-invalid');
+
+                        if (!hasAttemptedEncoding) {
+                            elements.userEncodingStatus.textContent = 'en attente';
+                            elements.userEncodingStatus.classList.add('status-pending');
+                            return;
+                        }
+
+                        if (isValid) {
+                            elements.userEncodingStatus.textContent = 'validé';
+                            elements.userEncodingStatus.classList.add('status-valid');
+                            return;
+                        }
+
+                        elements.userEncodingStatus.textContent = 'non validé - veuillez réessayer';
+                        elements.userEncodingStatus.classList.add('status-invalid');
+                    }
+
+                    function syncUserView(state) {
+                        renderUserWordStatus(state.matches || [], state.missing || []);
+                        renderUserEncodingStatus(state.payload || '', state.finalUrl || '', state.rowToWord || new Map());
+                        renderUserLink(state.finalUrl || '');
+                        renderUserQrCode(state.finalUrl || '');
+                    }
+
+                    async function resolveWordsAndBuildUrl() {
+                        const words = normalizeWords(elements.frenchWords.value);
+
+                        if (!words.length) {
+                            setStatus('Ajoutez au moins un mot.', true);
+                            renderRowsTable([]);
+                            elements.payloadOutput.textContent = 'Aucun jeton pour le moment.';
+                            elements.shareUrlOutput.textContent = 'Aucune URL pour le moment.';
+                            renderQrCode('');
+                            return;
+                        }
+
+                        try {
+                            setStatus('Chargement du lexique et résolution des lignes...');
+                            const { wordToRow, rowToWord } = await loadLexiqueMaps();
+
+                            const matches = [];
+                            const missing = [];
+
+                            words.forEach((word) => {
+                                const row = wordToRow.get(word);
+                                if (row) {
+                                    matches.push({ word, row, status: 'Correspondance exacte à la première colonne' });
+                                    return;
+                                }
+
+                                missing.push(word);
+                            });
+
+                            const payload = encodeListToQrString(matches.map((entry) => entry.row));
+                            const baseTarget = elements.baseUrl.value.trim() || getTrianglePageUrlFromCurrentPage();
+                            const finalUrl = payload ? generateQrUrl(payload, baseTarget).toUpperCase() : '';
+
+                            renderRowsTable(matches);
+                            elements.payloadOutput.textContent = payload || 'Aucun jeton n’a été produit.';
+                            elements.shareUrlOutput.textContent = finalUrl || 'Aucune URL n’a été produite.';
+                            renderDecodedWordsFromSource(finalUrl, rowToWord);
+                            syncUserView({ matches, missing, payload, finalUrl, rowToWord });
+
+                            if (missing.length) {
+                                setStatus(`Résolu ${matches.length} mot(s). Manquants : ${missing.join(', ')}`, true);
+                            } else {
+                                setStatus(`Résolu ${matches.length} mot(s) et créé l’URL de partage.`);
+                            }
+
+                            renderQrCode(finalUrl);
+                        } catch (error) {
+                            setStatus(error.message, true);
+                            renderRowsTable([]);
+                            elements.payloadOutput.textContent = 'Aucun jeton pour le moment.';
+                            elements.shareUrlOutput.textContent = 'Aucune URL pour le moment.';
+                            renderQrCode('');
+                            syncUserView({});
+                        }
+                    }
+
+                    async function resolveUserWordsAndBuildUrl() {
+                        const words = normalizeWords(elements.userWords.value);
+
+                        if (!words.length) {
+                            syncUserView({ matches: [], missing: [], payload: '', finalUrl: '', rowToWord: new Map() });
+                            return;
+                        }
+
+                        try {
+                            const { wordToRow, rowToWord } = await loadLexiqueMaps();
+                            const matches = [];
+                            const missing = [];
+
+                            words.forEach((word) => {
+                                const row = wordToRow.get(word);
+                                if (row) {
+                                    matches.push({ word, row, status: 'Correspondance exacte à la première colonne' });
+                                    return;
+                                }
+
+                                missing.push(word);
+                            });
+
+                            const payload = encodeListToQrString(matches.map((entry) => entry.row));
+                            const finalUrl = payload ? generateQrUrl(payload, getTrianglePageUrlFromCurrentPage()).toUpperCase() : '';
+
+                            syncUserView({ matches, missing, payload, finalUrl, rowToWord });
+                        } catch (error) {
+                            elements.userWordStatus.textContent = error.message;
+                            elements.userWordStatus.classList.add('error');
+                            elements.userEncodingStatus.textContent = 'Aucun jeton pour le moment.';
+                            elements.userEncodingStatus.classList.remove('error');
+                            renderUserLink('');
+                            renderUserQrCode('');
+                        }
+                    }
+
+                    async function decodeCurrentUrl() {
+                        try {
+                            const { rowToWord } = await loadLexiqueMaps();
+                            renderDecodedWordsFromSource(window.location.href, rowToWord);
+                            renderUserEncodingStatus('', '', rowToWord);
+                        } catch (error) {
+                            elements.decodedSummary.textContent = error.message;
+                            elements.extractedTokenOutput.textContent = 'Aucun';
+                            elements.decodedWords.innerHTML = '';
+                            elements.userEncodingStatus.textContent = error.message;
+                            elements.userEncodingStatus.classList.add('error');
+                        }
+                    }
+
+                    function fillCurrentPageAsBaseUrl() {
+                        elements.baseUrl.value = getTrianglePageUrlFromCurrentPage();
+                    }
+
+                    document.getElementById('buildButton').addEventListener('click', resolveWordsAndBuildUrl);
+                    document.getElementById('decodeButton').addEventListener('click', decodeCurrentUrl);
+                    document.getElementById('fillCurrentButton').addEventListener('click', fillCurrentPageAsBaseUrl);
+                    elements.userBuildButton.addEventListener('click', resolveUserWordsAndBuildUrl);
+                    elements.adminViewButton.addEventListener('click', () => setViewMode('admin'));
+                    elements.userViewButton.addEventListener('click', () => setViewMode('user'));
+
+                    window.addEventListener('DOMContentLoaded', () => {
+                        setViewMode(getSavedViewMode());
+                        fillCurrentPageAsBaseUrl();
+                        decodeCurrentUrl();
+                        syncUserView({ matches: [], missing: [], payload: '', finalUrl: '', rowToWord: new Map() });
+                    });
+                </script>
+    <footer class="attribution">
+      <p>Développé par <a href="https://hugo.verzone.ch" target="_blank" rel="noopener noreferrer">Hugo Verzone</a> | 
+        Concept du triangle des voyelles par <a href="https://wp.unil.ch/ficellesapprendre/sophia-smajlovic-1142/" target="_blank" rel="noopener noreferrer">Sophia Smajlovic (UNIL)</a> | 
+        Audio de prononciation provenant de <a href="https://fonetix.org/fr/etudier/ressources" target="_blank" rel="noopener noreferrer">Fonetix.org</a> |
+        Dictionaire phonétique provenant de <a href="http://www.lexique.org/" target="_blank" rel="noopener noreferrer">Lexique.org</a> |
+        Algorithme de segmentation phonétique par <a href="https://gricad-gitlab.univ-grenoble-alpes.fr/pedagogies-multimodales/phon2graph" target="_blank" rel="noopener noreferrer">Sylvain Coulange et Alexandre Do (UGA)</a></p>  
+      </footer>
+</body>
+</html>
