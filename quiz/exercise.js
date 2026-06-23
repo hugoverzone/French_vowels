@@ -23,7 +23,6 @@ const elements = {
   exerciseScore: document.getElementById('exercise-score'),
   exerciseFeedback: document.getElementById('exercise-feedback'),
   exerciseSpeak: document.getElementById('exercise-speak'),
-  exerciseNext: document.getElementById('exercise-next'),
   exerciseReplay: document.getElementById('exercise-replay'),
   vowelButtons: [...document.querySelectorAll('.vowel')]
 };
@@ -44,6 +43,12 @@ function play(sound) {
   const audioPath = '../assets/audio/vowels_fonetix_without_example/';
   const audio = new Audio(audioPath + sound + '.mp3');
   audio.play();
+}
+
+function setExercisePhoneticText(message) {
+  if (elements.exercisePhonetic) {
+    elements.exercisePhonetic.textContent = message;
+  }
 }
 
 window.play = play;
@@ -344,6 +349,7 @@ function renderWordDisplay(item) {
   const completedSegmentCount = getCompletedSegmentCount(item);
   const [flashStart, flashEnd] = item?.flashRange || [-1, -1];
   const [missedStart, missedEnd] = item?.missedRange || [-1, -1];
+  const newlyCompletedIndex = item?.justCompletedIndex ?? -1;
 
   elements.exerciseWord.replaceChildren();
 
@@ -357,9 +363,13 @@ function renderWordDisplay(item) {
     const span = document.createElement('span');
     span.className = 'exercise-word-segment';
     span.textContent = segment;
+    span.style.setProperty('--segment-index', index);
 
     if (index < completedSegmentCount) {
       span.classList.add('is-complete');
+      if (index === newlyCompletedIndex) {
+        span.classList.add('is-newly-complete');
+      }
     } else if (item && index >= flashStart && index <= flashEnd) {
       span.classList.add('is-error');
     } else if (item && index >= missedStart && index <= missedEnd) {
@@ -370,6 +380,10 @@ function renderWordDisplay(item) {
 
     elements.exerciseWord.appendChild(span);
   });
+
+  if (item) {
+    item.justCompletedIndex = null;
+  }
 
   elements.exerciseWord.dataset.state = completedSegmentCount >= segments.length ? 'complete' : 'active';
 }
@@ -422,9 +436,8 @@ function renderExerciseItem(preserveFeedback = false) {
   if (!item) {
     elements.exerciseWord.textContent = 'Aucun exercice chargé.';
     elements.exerciseWord.dataset.state = '';
-    elements.exercisePhonetic.textContent = 'Ouvrez une URL contenant T=... pour commencer.';
+    setExercisePhoneticText('Ouvrez une URL contenant T=... pour commencer.');
     elements.exerciseScore.textContent = 'Réussites : 0';
-    elements.exerciseNext.classList.add('hidden');
     updateCompletionBar(null);
     if (!preserveFeedback) {
       setExerciseFeedback('', '');
@@ -434,16 +447,20 @@ function renderExerciseItem(preserveFeedback = false) {
 
   renderWordDisplay(item);
   updateCompletionBar(item);
-  elements.exercisePhonetic.textContent = item.phonetic;
+  setExercisePhoneticText(item.phonetic);
   elements.exerciseScore.textContent = `Réussites : ${exerciseState.correct}`;
-  elements.exerciseNext.classList.add('hidden');
   updateExerciseProgress(item);
 
   if (!item.targetSounds.length) {
     if (!preserveFeedback) {
-      setExerciseFeedback("Aucun son vocalique n'a pu être déduit pour cette ligne. Utilisez Mot suivant pour continuer.", 'incorrect');
+      setExerciseFeedback("Aucun son vocalique n'a pu être déduit pour cette ligne. Passage automatique au suivant...", 'incorrect');
     }
-    elements.exerciseNext.classList.remove('hidden');
+    exerciseState.locked = true;
+    completionAdvanceTimer = window.setTimeout(() => {
+      if (exerciseState.locked) {
+        advanceExercise();
+      }
+    }, TIMINGS.correctAdvanceMs);
     return;
   }
 
@@ -463,10 +480,9 @@ function finishExercise() {
   clearCompletionTimers();
   elements.exerciseWord.textContent = '';
   elements.exerciseWord.dataset.state = '';
-  elements.exercisePhonetic.textContent = 'Toutes les lignes demandées ont été affichées.';
+  setExercisePhoneticText('Toutes les lignes demandées ont été affichées.');
   updateExerciseProgress(null);
   elements.exerciseScore.textContent = `Réussites : ${exerciseState.correct}`;
-  elements.exerciseNext.classList.add('hidden');
   elements.exerciseReplay.classList.remove('hidden');
   updateCompletionBar(null);
   setExerciseFeedback('Félicitations ! Exercice terminé.', 'correct');
@@ -501,7 +517,8 @@ function buildExerciseItem(entry, row, phoneticToSound) {
     useConnectedSegmentation: targetSegments.useConnectedSegmentation,
     soundIndex: 0,
     flashRange: null,
-    missedRange: null
+    missedRange: null,
+    justCompletedIndex: null
   };
 }
 
@@ -521,6 +538,7 @@ function handleVowelSelection(sound) {
   if (sound === currentTargetSound) {
     exerciseState.correct += 1;
     item.soundIndex += 1;
+    item.justCompletedIndex = item.soundIndex - 1;
     exerciseState.locked = true;
     clearCompletionTimers();
     delete item.flashRange;
@@ -528,7 +546,6 @@ function handleVowelSelection(sound) {
     renderWordDisplay(item);
     updateCompletionBar(item);
     elements.exerciseScore.textContent = `Réussites : ${exerciseState.correct}`;
-    elements.exerciseNext.classList.remove('hidden');
 
     if (item.soundIndex >= item.targetSounds.length) {
       setExerciseFeedback(`Bien joué. ${item.word} est terminé.`, 'correct');
@@ -608,18 +625,16 @@ async function initExercise() {
     if (!exerciseState.items.length) {
       elements.exerciseWord.textContent = 'Aucune ligne correspondante trouvée.';
       elements.exerciseWord.dataset.state = '';
-      elements.exercisePhonetic.textContent = 'Vérifiez le jeton dans l’URL.';
+      setExercisePhoneticText('Vérifiez le jeton dans l’URL.');
       elements.exerciseProgress.textContent = '0 / 0';
       elements.exerciseScore.textContent = 'Réussites : 0';
       updateCompletionBar(null);
       setExerciseFeedback('Le jeton fourni ne correspond à aucune entrée du CSV.', 'incorrect');
-      elements.exerciseNext.classList.add('hidden');
       return;
     }
 
     renderExerciseItem();
     elements.exerciseSpeak.addEventListener('click', speakCurrentWord);
-    elements.exerciseNext.addEventListener('click', advanceExercise);
     elements.exerciseReplay.addEventListener('click', () => window.location.reload());
     elements.vowelButtons.forEach((button) => {
       button.addEventListener('click', () => handleVowelSelection(button.dataset.sound || ''));
@@ -627,7 +642,7 @@ async function initExercise() {
   } catch (error) {
     elements.exerciseWord.textContent = 'Impossible de démarrer l’exercice.';
     elements.exerciseWord.dataset.state = '';
-    elements.exercisePhonetic.textContent = error.message || 'Le chargement des données a échoué.';
+    setExercisePhoneticText(error.message || 'Le chargement des données a échoué.');
     setExerciseFeedback(error.message || 'Le chargement des données a échoué.', 'incorrect');
   }
 }
