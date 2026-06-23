@@ -324,6 +324,10 @@ text {
 }
 .exercise-feedback.correct { color: #0d7a3a; }
 .exercise-feedback.incorrect { color: #a43b2f; }
+.exercise-word.exercise-completion {
+  color: #0d7a3a;
+  font-weight: 700;
+}
 .completion-fireworks {
   position: fixed;
   inset: 0;

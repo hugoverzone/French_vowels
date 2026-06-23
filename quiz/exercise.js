@@ -581,6 +581,9 @@ function speakCurrentWord() {
 function renderExerciseItem(preserveFeedback = false) {
   const item = getCurrentItem();
 
+  // Ensure any previous completion styling is cleared
+  elements.exerciseWord.classList.remove('exercise-completion');
+
   setPrimaryActionButton('speak');
   elements.exerciseReplay.classList.add('hidden');
 
@@ -623,13 +626,14 @@ function renderExerciseItem(preserveFeedback = false) {
 function finishExercise() {
   clearCompletionTimers();
   launchCompletionFireworks();
-  elements.exerciseWord.textContent = '';
-  elements.exerciseWord.dataset.state = '';
+  // Show completion message in the main word box
+  elements.exerciseWord.textContent = 'Félicitations !';
+  elements.exerciseWord.classList.add('exercise-completion');
+  elements.exerciseWord.dataset.state = 'complete';
   setExercisePhoneticText('Toutes les lignes demandées ont été affichées.');
   updateExerciseProgress(null);
   setPrimaryActionButton('replay');
   elements.exerciseReplay.classList.add('hidden');
-  setExerciseFeedback('Félicitations ! Exercice terminé.', 'correct');
 }
 
 function advanceExercise() {
