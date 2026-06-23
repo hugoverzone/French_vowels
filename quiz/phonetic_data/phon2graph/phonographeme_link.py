@@ -6,10 +6,10 @@ import unicodedata
 from phon2graph_french import decoupage
 
 #paths
-class2phoneme_filePath = "quiz/phonetic_data/phon2graph/data/class-phoneme_v2.csv" # phon_e_maj,ɛ
-phoneme2grapheme_filePath = "quiz/phonetic_data/phon2graph/data/fidel_wikicolor.scsv" # ɛ:è,ê,e,ei,es,ai
+class2phoneme_filePath = "QUIZ/phonetic_data/phon2graph/data/class-phoneme_v2.csv" # phon_e_maj,ɛ
+phoneme2grapheme_filePath = "QUIZ/phonetic_data/phon2graph/data/fidel_wikicolor.scsv" # ɛ:è,ê,e,ei,es,ai
 
-lexique_phonetique_filePath = "quiz/phonetic_data/lexique_phonetique.csv" 
+lexique_phonetique_filePath = "QUIZ/phonetic_data/lexique_phonetique.csv" 
 
 
 
@@ -112,6 +112,6 @@ print(f"Number of failing words containing '-': {dash}")
 print(f"Number of failing words containing ' ': {space}")
 
 #save connected lexique to csv file
-with open("quiz/phonetic_data/lexique_phonetique_connected.csv", mode="w", encoding='utf-8') as connected_file:
+with open("QUIZ/phonetic_data/lexique_phonetique_connected.csv", mode="w", encoding='utf-8') as connected_file:
     for word, trans, phon, types, successful_decoup, graph_decoup, simple_phon_decoup, phon_decoup, in connected_lexique:
         connected_file.write(f"{word},{trans},{phon},{types},{successful_decoup},{graph_decoup},{simple_phon_decoup},{phon_decoup}\n")

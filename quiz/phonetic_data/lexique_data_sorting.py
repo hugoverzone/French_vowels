@@ -37,7 +37,7 @@ def write_csv(data, filename):
         for key, value in data.items():
             writer.writerow([key] + list(value))
 
-write_csv(data, 'quiz/phonetic_data/lexique_phonetique2.csv')
+write_csv(data, 'QUIZ/phonetic_data/lexique_phonetique2.csv')
 
 #list all the unique characters in the strings of values in the second column
 phonetic_characters = []
