@@ -585,7 +585,6 @@ function shuffleExerciseItems(items) {
     const swapIndex = Math.floor(Math.random() * (index + 1));
     [shuffledItems[index], shuffledItems[swapIndex]] = [shuffledItems[swapIndex], shuffledItems[index]];
   }
-
   return shuffledItems;
 }
 
