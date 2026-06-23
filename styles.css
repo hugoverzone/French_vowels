@@ -118,9 +118,73 @@ text {
 }
 .exercise-panel h2 { margin: 0 0 6px; font-size: 18px; }
 .exercise-panel p { margin: 0 0 10px; }
-.exercise-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+.exercise-meta { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
 .exercise-card { padding: 12px; border-radius: 14px; background: rgba(0, 0, 0, 0.035); }
+.exercise-speak {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+  justify-self: end;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.05;
+}
+
+.exercise-speak span {
+  display: block;
+}
 .exercise-card strong { display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: rgba(0, 0, 0, 0.6); }
+.exercise-progress-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: center;
+}
+
+.progress-ring {
+  --progress: 0;
+  --ring-size: 78px;
+  --ring-thickness: 9px;
+  --ring-track: rgba(31, 31, 31, 0.08);
+  width: var(--ring-size);
+  height: var(--ring-size);
+  border-radius: 50%;
+  margin: 0 auto;
+  padding: var(--ring-thickness);
+  background: conic-gradient(from 180deg, #244d6c 0 calc(var(--progress) * 1turn), var(--ring-track) calc(var(--progress) * 1turn) 1turn);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8), 0 8px 18px rgba(31, 31, 31, 0.08);
+}
+
+.progress-ring__inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: radial-gradient(circle at top, #fffefb 0%, #f7f2ea 100%);
+  text-align: center;
+}
+
+.progress-ring__value {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+  color: #1f1f1f;
+}
+
+.progress-ring__label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(31, 31, 31, 0.62);
+}
 .exercise-word {
   display: flex;
   flex-wrap: wrap;
@@ -170,32 +234,66 @@ text {
     transform: translateY(0);
   }
 }
-.exercise-completion {
-  width: 100%;
-  height: 10px;
-  margin-top: 10px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.09);
-  overflow: hidden;
-}
-.exercise-completion-fill {
-  width: 0%;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #121212 0%, #2a7c3f 100%);
-  transition: width 0.35s ease, background 0.2s ease;
-}
-.exercise-completion-fill.is-error {
-  background: linear-gradient(90deg, #121212 0%, #c53030 100%);
-}
 .exercise-phonetic { font-size: 15px; color: #555; font-family: "Courier New", Courier, monospace; word-break: break-word; }
 .exercise-feedback { min-height: 1.4em; margin-top: 10px; font-weight: 700; }
 .exercise-feedback.correct { color: #0d7a3a; }
 .exercise-feedback.incorrect { color: #a43b2f; }
 .exercise-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
-.exercise-button { border: 0; border-radius: 999px; padding: 10px 14px; cursor: pointer; font: inherit; font-weight: 700; background: #222; color: #fff; }
+.exercise-button { border: 0; border-radius: 999px; padding: 8px 12px; cursor: pointer; font: inherit; font-size: 14px; font-weight: 700; background: #222; color: #fff; }
 .exercise-button.secondary { background: rgba(0, 0, 0, 0.08); color: #222; }
 .exercise-progress { font-size: 13px; color: var(--muted); }
+
+@media (max-width: 859px) {
+  .exercise-meta {
+    grid-template-columns: minmax(0, 1fr) 120px;
+  }
+
+  .exercise-progress-grid {
+    gap: 10px;
+  }
+
+  .progress-ring {
+    --ring-size: 70px;
+    --ring-thickness: 8px;
+  }
+
+  .exercise-card--word {
+    grid-column: 1 / -1;
+  }
+
+  .exercise-speak {
+    width: 120px;
+  }
+}
+
+@media (min-width: 860px) {
+  .exercise-meta {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) 96px;
+    align-items: stretch;
+  }
+
+  .exercise-card--progress {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .progress-ring {
+    --ring-size: 84px;
+  }
+
+  .exercise-card--word {
+    min-width: 0;
+  }
+
+  .exercise-card--progress,
+  .exercise-speak {
+    min-width: 0;
+  }
+
+  .exercise-speak {
+    width: 120px;
+  }
+}
 
 .quiz-creator {
   font-size: 16px;

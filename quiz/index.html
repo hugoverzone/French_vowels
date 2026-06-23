@@ -10,21 +10,32 @@
     <section class="exercise-panel" id="exercise-panel">
       <h2>Quiz - Triangle des voyelles</h2>
       <div class="exercise-meta">
-        <div class="exercise-card">
+        <div class="exercise-card exercise-card--word">
           <div class="exercise-word" id="exercise-word">En attente du jeton...</div>
-          <div class="exercise-completion" aria-hidden="true">
-            <div class="exercise-completion-fill" id="exercise-completion-fill"></div>
+        </div>
+        <div class="exercise-card exercise-card--progress">
+          <div class="exercise-progress-grid" aria-label="Progression de l'exercice">
+            <div class="progress-ring" id="exercise-sound-progress" style="--progress: 0;" role="progressbar" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 / 0">
+              <div class="progress-ring__inner">
+                <span class="progress-ring__value" id="exercise-sound-progress-value">0%</span>
+                <span class="progress-ring__label">Son</span>
+              </div>
+            </div>
+            <div class="progress-ring" id="exercise-word-progress" style="--progress: 0;" role="progressbar" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0 / 0">
+              <div class="progress-ring__inner">
+                <span class="progress-ring__value" id="exercise-word-progress-value">0%</span>
+                <span class="progress-ring__label">Mots</span>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="exercise-card">
-          <strong>Progression</strong>
-          <div class="exercise-progress" id="exercise-progress">0 / 0</div>
-        </div>
+        <button class="exercise-button secondary exercise-speak" id="exercise-speak" type="button" aria-label="Écouter le mot">
+          <span>Écouter le mot</span>
+        </button>
       </div>
       <div class="exercise-feedback" id="exercise-feedback" aria-live="polite"></div>
       <div class="exercise-footer">
         <div class="exercise-progress" id="exercise-score">Réussites : 0</div>
-        <button class="exercise-button secondary" id="exercise-speak" type="button">Écouter le mot</button>
         <button class="exercise-button secondary hidden" id="exercise-replay" type="button">Rejouer</button>
       </div>
     </section>

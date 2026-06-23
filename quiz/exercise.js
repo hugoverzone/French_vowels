@@ -17,9 +17,11 @@ const TIMINGS = {
 const elements = {
   exercisePanel: document.getElementById('exercise-panel'),
   exerciseWord: document.getElementById('exercise-word'),
-  exerciseCompletionFill: document.getElementById('exercise-completion-fill'),
   exercisePhonetic: document.getElementById('exercise-phonetic'),
-  exerciseProgress: document.getElementById('exercise-progress'),
+  exerciseSoundProgress: document.getElementById('exercise-sound-progress'),
+  exerciseSoundProgressValue: document.getElementById('exercise-sound-progress-value'),
+  exerciseWordProgress: document.getElementById('exercise-word-progress'),
+  exerciseWordProgressValue: document.getElementById('exercise-word-progress-value'),
   exerciseScore: document.getElementById('exercise-score'),
   exerciseFeedback: document.getElementById('exercise-feedback'),
   exerciseSpeak: document.getElementById('exercise-speak'),
@@ -265,6 +267,24 @@ function getCurrentTargetSound(item) {
   return item?.targetSounds?.[item.soundIndex] || '';
 }
 
+function setProgressRing(elementsSet, value, total) {
+  const safeTotal = Math.max(0, total);
+  const safeValue = Math.max(0, Math.min(value, safeTotal));
+  const progress = safeTotal > 0 ? safeValue / safeTotal : 0;
+  const displayText = safeTotal > 0 ? `${safeValue} / ${safeTotal}` : '0 / 0';
+
+  if (elementsSet.ring) {
+    elementsSet.ring.style.setProperty('--progress', String(progress));
+    elementsSet.ring.setAttribute('aria-valuenow', String(safeValue));
+    elementsSet.ring.setAttribute('aria-valuemax', String(safeTotal));
+    elementsSet.ring.setAttribute('aria-valuetext', displayText);
+  }
+
+  if (elementsSet.value) {
+    elementsSet.value.textContent = displayText;
+  }
+}
+
 function clearCompletionTimers() {
   if (completionAdvanceTimer) {
     window.clearTimeout(completionAdvanceTimer);
@@ -325,25 +345,6 @@ function getActiveSegmentRange(item) {
   return [start, Math.min(item.displaySegments.length - 1, start + span - 1)];
 }
 
-function updateCompletionBar(item) {
-  if (!elements.exerciseCompletionFill) {
-    return;
-  }
-
-  const segments = item?.displaySegments || [];
-
-  if (!segments.length) {
-    elements.exerciseCompletionFill.style.width = '0%';
-    elements.exerciseCompletionFill.classList.remove('is-error');
-    return;
-  }
-
-  const completedSegmentCount = getCompletedSegmentCount(item);
-  const percentage = Math.max(0, Math.min(100, (completedSegmentCount / segments.length) * 100));
-  elements.exerciseCompletionFill.style.width = `${percentage}%`;
-  elements.exerciseCompletionFill.classList.toggle('is-error', Boolean(item?.flashRange));
-}
-
 function renderWordDisplay(item) {
   const segments = item?.displaySegments || [];
   const completedSegmentCount = getCompletedSegmentCount(item);
@@ -389,16 +390,20 @@ function renderWordDisplay(item) {
 }
 
 function updateExerciseProgress(item) {
-  if (!item) {
-    elements.exerciseProgress.textContent = '0 / 0';
-    return;
-  }
+  const totalWords = exerciseState.items.length;
+  const completedWords = Math.min(exerciseState.index, totalWords);
+  const soundTotal = item ? item.targetSounds.length : 0;
+  const soundProgress = item ? Math.min(item.soundIndex, soundTotal) : 0;
 
-  const soundProgress = item.soundIndex >= item.targetSounds.length && item.targetSounds.length > 0
-    ? `${item.targetSounds.length} / ${item.targetSounds.length}`
-    : `${item.soundIndex + 1} / ${Math.max(1, item.targetSounds.length)}`;
+  setProgressRing({
+    ring: elements.exerciseSoundProgress,
+    value: elements.exerciseSoundProgressValue
+  }, soundProgress, soundTotal);
 
-  elements.exerciseProgress.textContent = `Mot ${exerciseState.index + 1} / ${exerciseState.items.length} · Son ${soundProgress}`;
+  setProgressRing({
+    ring: elements.exerciseWordProgress,
+    value: elements.exerciseWordProgressValue
+  }, completedWords, totalWords);
 }
 
 function setExerciseFeedback(message, tone = '') {
@@ -438,7 +443,6 @@ function renderExerciseItem(preserveFeedback = false) {
     elements.exerciseWord.dataset.state = '';
     setExercisePhoneticText('Ouvrez une URL contenant T=... pour commencer.');
     elements.exerciseScore.textContent = 'Réussites : 0';
-    updateCompletionBar(null);
     if (!preserveFeedback) {
       setExerciseFeedback('', '');
     }
@@ -446,7 +450,6 @@ function renderExerciseItem(preserveFeedback = false) {
   }
 
   renderWordDisplay(item);
-  updateCompletionBar(item);
   setExercisePhoneticText(item.phonetic);
   elements.exerciseScore.textContent = `Réussites : ${exerciseState.correct}`;
   updateExerciseProgress(item);
@@ -484,7 +487,6 @@ function finishExercise() {
   updateExerciseProgress(null);
   elements.exerciseScore.textContent = `Réussites : ${exerciseState.correct}`;
   elements.exerciseReplay.classList.remove('hidden');
-  updateCompletionBar(null);
   setExerciseFeedback('Félicitations ! Exercice terminé.', 'correct');
 }
 
@@ -544,7 +546,6 @@ function handleVowelSelection(sound) {
     delete item.flashRange;
     delete item.missedRange;
     renderWordDisplay(item);
-    updateCompletionBar(item);
     elements.exerciseScore.textContent = `Réussites : ${exerciseState.correct}`;
 
     if (item.soundIndex >= item.targetSounds.length) {
@@ -574,14 +575,12 @@ function handleVowelSelection(sound) {
   item.flashRange = [flashStart, flashEnd];
   delete item.missedRange;
   renderWordDisplay(item);
-  updateCompletionBar(item);
   setExerciseFeedback(`Pas tout à fait. Réessayez le son ${item.soundIndex + 1} / ${item.targetSounds.length} pour ${item.word}.`, 'incorrect');
 
   completionFlashTimer = window.setTimeout(() => {
     delete item.flashRange;
     item.missedRange = [flashStart, flashEnd];
     renderWordDisplay(item);
-    updateCompletionBar(item);
     completionFlashTimer = null;
   }, TIMINGS.incorrectFlashMs);
 }
@@ -626,9 +625,8 @@ async function initExercise() {
       elements.exerciseWord.textContent = 'Aucune ligne correspondante trouvée.';
       elements.exerciseWord.dataset.state = '';
       setExercisePhoneticText('Vérifiez le jeton dans l’URL.');
-      elements.exerciseProgress.textContent = '0 / 0';
+      updateExerciseProgress(null);
       elements.exerciseScore.textContent = 'Réussites : 0';
-      updateCompletionBar(null);
       setExerciseFeedback('Le jeton fourni ne correspond à aucune entrée du CSV.', 'incorrect');
       return;
     }
@@ -643,6 +641,7 @@ async function initExercise() {
     elements.exerciseWord.textContent = 'Impossible de démarrer l’exercice.';
     elements.exerciseWord.dataset.state = '';
     setExercisePhoneticText(error.message || 'Le chargement des données a échoué.');
+    updateExerciseProgress(null);
     setExerciseFeedback(error.message || 'Le chargement des données a échoué.', 'incorrect');
   }
 }
