@@ -10,7 +10,7 @@ const TRIANGLE_VOWELS_PATHS = [new URL('./JSON', import.meta.url).href];
 const VOWEL_SOUNDS = ['o', 'oe', 'è', 'eu', 'au', 'é', 'ou', 'u', 'i', 'a', 'an', 'on', 'in'];
 const TIMINGS = {
   incorrectFlashMs: 1000,
-  correctAdvanceMs: 700,
+  correctAdvanceMs: 100,
   finalAdvanceMs: 2600
 };
 const COMPLETION_RING_ANIMATION_MS = 460;

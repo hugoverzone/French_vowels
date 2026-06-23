@@ -66,26 +66,33 @@ for word, trans, phon, types in lexique_phonetique:
     graph_decoupage_str = "|".join([f"{g}" for p, g, c in decoup])
     successful_decoup = False if decoup[0][0] == "phon_echec" else True
     simple_phon_decoupage_str = ""
-    for j in range(len(decoup)):
+    nbr_combined = 0
+    phoneme_index = 0
+    for j in range(len(phon_decoupage_str.split('|'))):
         if decoup[j][0] != "phon_echec":
+            
             combined_count = 0
             for decomposed_letters in decoup[j][2]:
                 if unicodedata.combining(decomposed_letters) > 0:
                     combined_count += 1
+                    nbr_combined += 1
+                else:
+                    simple_phon_decoupage_str += trans[phoneme_index]
+                    phoneme_index += 1
 
-            if simple_phon_decoupage_str != "":
-                simple_phon_decoupage_str += "|"
+            if len(simple_phon_decoupage_str) >= len(phon_decoupage_str) - nbr_combined:
+                break
             
-            for char_count in range(len(decoup[j][2]) - combined_count):
-                simple_phon_decoupage_str += trans[j+char_count]
+            simple_phon_decoupage_str += '|'
 
 
-    connected_lexique.append((word, trans, phon, types, successful_decoup, graph_decoupage_str, phon_decoupage_str, simple_phon_decoupage_str))
     
     if decoup[0][0] == "phon_echec":
         nbr_fails += 1
         fails.append(word)
         decoup[0] =  tuple(('phon_echec', '', ''))
+
+    connected_lexique.append((word, trans, phon, types, successful_decoup, graph_decoupage_str, simple_phon_decoupage_str, phon_decoupage_str))
         
 
 
@@ -107,4 +114,4 @@ print(f"Number of failing words containing ' ': {space}")
 #save connected lexique to csv file
 with open("quiz/phonetic_data/lexique_phonetique_connected.csv", mode="w", encoding='utf-8') as connected_file:
     for word, trans, phon, types, successful_decoup, graph_decoup, simple_phon_decoup, phon_decoup, in connected_lexique:
-        connected_file.write(f"{word},{trans},{phon},{types},{successful_decoup},{graph_decoup},{phon_decoup},{simple_phon_decoup}\n")
+        connected_file.write(f"{word},{trans},{phon},{types},{successful_decoup},{graph_decoup},{simple_phon_decoup},{phon_decoup}\n")
