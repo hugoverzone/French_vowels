@@ -15,6 +15,9 @@ const TIMINGS = {
 };
 const COMPLETION_RING_ANIMATION_MS = 460;
 const COMPLETION_TRANSFER_DELAY_MS = 520;
+const COMPLETION_FIREWORK_DURATION_MS = 3200;
+const COMPLETION_FIREWORK_COUNT = 9;
+const COMPLETION_FIREWORK_SPARKS = 10;
 
 const elements = {
   exercisePanel: document.getElementById('exercise-panel'),
@@ -36,6 +39,8 @@ let vowelMapPromise = null;
 let completionAdvanceTimer = null;
 let completionFlashTimer = null;
 let completionWordProgressTimer = null;
+let completionFireworkTimer = null;
+let completionFireworkLayer = null;
 let progressRingAnimationTimers = new WeakMap();
 
 const exerciseState = {
@@ -55,6 +60,87 @@ function setExercisePhoneticText(message) {
   if (elements.exercisePhonetic) {
     elements.exercisePhonetic.textContent = message;
   }
+}
+
+function setPrimaryActionButton(mode = 'speak') {
+  if (!elements.exerciseSpeak) {
+    return;
+  }
+
+  const isReplayMode = mode === 'replay';
+
+  elements.exerciseSpeak.innerHTML = isReplayMode ? 'Rejouer' : '<span>Écouter<br>le mot</span>';
+  elements.exerciseSpeak.setAttribute('aria-label', isReplayMode ? 'Rejouer l’exercice' : 'Écouter le mot');
+}
+
+function clearCompletionFireworks() {
+  if (completionFireworkTimer) {
+    window.clearTimeout(completionFireworkTimer);
+    completionFireworkTimer = null;
+  }
+
+  if (completionFireworkLayer) {
+    completionFireworkLayer.remove();
+    completionFireworkLayer = null;
+  }
+}
+
+function launchCompletionFireworks() {
+  clearCompletionFireworks();
+
+  const layer = document.createElement('div');
+  layer.className = 'completion-fireworks';
+  layer.setAttribute('aria-hidden', 'true');
+
+  for (let index = 0; index < COMPLETION_FIREWORK_COUNT; index += 1) {
+    const firework = document.createElement('div');
+    firework.className = 'completion-firework';
+
+    const x = 12 + Math.random() * 76;
+    const y = 14 + Math.random() * 62;
+    const hue = Math.floor(Math.random() * 360);
+    const delay = Math.random() * 900;
+
+    firework.style.setProperty('--firework-x', `${x}vw`);
+    firework.style.setProperty('--firework-y', `${y}vh`);
+    firework.style.setProperty('--firework-hue', `${hue}`);
+    firework.style.setProperty('--firework-delay', `${delay}ms`);
+
+    for (let sparkIndex = 0; sparkIndex < COMPLETION_FIREWORK_SPARKS; sparkIndex += 1) {
+      const spark = document.createElement('span');
+      spark.className = 'completion-firework__spark';
+
+      const angle = (360 / COMPLETION_FIREWORK_SPARKS) * sparkIndex + Math.random() * 12;
+      const distance = 42 + Math.random() * 64;
+      const sparkDelay = delay + Math.random() * 120;
+
+      spark.style.setProperty('--spark-angle', `${angle}deg`);
+      spark.style.setProperty('--spark-distance', `${distance}`);
+      spark.style.setProperty('--spark-delay', `${sparkDelay}ms`);
+      spark.style.setProperty('--spark-hue', `${(hue + sparkIndex * 9) % 360}`);
+      spark.style.setProperty('--spark-size', `${3 + Math.random() * 3}px`);
+
+      firework.appendChild(spark);
+    }
+
+    layer.appendChild(firework);
+  }
+
+  document.body.appendChild(layer);
+  completionFireworkLayer = layer;
+
+  completionFireworkTimer = window.setTimeout(() => {
+    clearCompletionFireworks();
+  }, COMPLETION_FIREWORK_DURATION_MS);
+}
+
+function handlePrimaryActionButtonClick() {
+  if (exerciseState.index >= exerciseState.items.length) {
+    window.location.reload();
+    return;
+  }
+
+  speakCurrentWord();
 }
 
 window.play = play;
@@ -495,6 +581,9 @@ function speakCurrentWord() {
 function renderExerciseItem(preserveFeedback = false) {
   const item = getCurrentItem();
 
+  setPrimaryActionButton('speak');
+  elements.exerciseReplay.classList.add('hidden');
+
   if (!item) {
     elements.exerciseWord.textContent = 'Aucun exercice chargé.';
     elements.exerciseWord.dataset.state = '';
@@ -523,9 +612,6 @@ function renderExerciseItem(preserveFeedback = false) {
   }
 
   if (item.soundIndex >= item.targetSounds.length) {
-    if (!preserveFeedback) {
-      setExerciseFeedback('Mot terminé. Passage au suivant en cours...', 'correct');
-    }
     return;
   }
 
@@ -536,11 +622,13 @@ function renderExerciseItem(preserveFeedback = false) {
 
 function finishExercise() {
   clearCompletionTimers();
+  launchCompletionFireworks();
   elements.exerciseWord.textContent = '';
   elements.exerciseWord.dataset.state = '';
   setExercisePhoneticText('Toutes les lignes demandées ont été affichées.');
   updateExerciseProgress(null);
-  elements.exerciseReplay.classList.remove('hidden');
+  setPrimaryActionButton('replay');
+  elements.exerciseReplay.classList.add('hidden');
   setExerciseFeedback('Félicitations ! Exercice terminé.', 'correct');
 }
 
@@ -613,7 +701,6 @@ function handleVowelSelection(sound) {
 
     if (item.soundIndex >= item.targetSounds.length) {
       stageCompletionProgress(item);
-      setExerciseFeedback(`Bien joué. ${item.word} est terminé.`, 'correct');
       completionAdvanceTimer = window.setTimeout(() => {
         if (exerciseState.locked) {
           advanceExercise();
@@ -627,7 +714,6 @@ function handleVowelSelection(sound) {
       animateWords: false
     });
 
-    setExerciseFeedback(`Bien joué. Son ${item.soundIndex} trouvé pour ${item.word}.`, 'correct');
     completionAdvanceTimer = window.setTimeout(() => {
       if (!exerciseState.locked) {
         return;
@@ -644,7 +730,6 @@ function handleVowelSelection(sound) {
   item.flashRange = [flashStart, flashEnd];
   delete item.missedRange;
   renderWordDisplay(item);
-  setExerciseFeedback(`Pas tout à fait. Réessayez le son ${item.soundIndex + 1} / ${item.targetSounds.length} pour ${item.word}.`, 'incorrect');
 
   completionFlashTimer = window.setTimeout(() => {
     delete item.flashRange;
@@ -702,7 +787,7 @@ async function initExercise() {
     }
 
     renderExerciseItem();
-    elements.exerciseSpeak.addEventListener('click', speakCurrentWord);
+    elements.exerciseSpeak.addEventListener('click', handlePrimaryActionButtonClick);
     elements.exerciseReplay.addEventListener('click', () => window.location.reload());
     elements.vowelButtons.forEach((button) => {
       button.addEventListener('click', () => handleVowelSelection(button.dataset.sound || ''));

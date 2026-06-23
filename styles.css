@@ -324,6 +324,120 @@ text {
 }
 .exercise-feedback.correct { color: #0d7a3a; }
 .exercise-feedback.incorrect { color: #a43b2f; }
+.completion-fireworks {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.06) 18%, rgba(255, 255, 255, 0) 45%),
+    linear-gradient(180deg, rgba(5, 12, 28, 0.16), rgba(5, 12, 28, 0.03));
+  animation: completion-fireworks-fade 3200ms ease-out both;
+}
+
+.completion-fireworks::before,
+.completion-fireworks::after {
+  content: '';
+  position: absolute;
+  inset: -8vmax;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.completion-fireworks::before {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.22) 18%, rgba(255, 255, 255, 0) 55%);
+  opacity: 0;
+  animation: completion-fireworks-flash 900ms ease-out both;
+}
+
+.completion-fireworks::after {
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.14) 0 1px, transparent 2px),
+    radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.18) 0 1px, transparent 2px),
+    radial-gradient(circle at 35% 70%, rgba(255, 255, 255, 0.12) 0 1px, transparent 2px),
+    radial-gradient(circle at 72% 62%, rgba(255, 255, 255, 0.16) 0 1px, transparent 2px);
+  opacity: 0;
+  animation: completion-fireworks-twinkle 3200ms ease-out both;
+}
+
+.completion-firework {
+  position: absolute;
+  left: var(--firework-x);
+  top: var(--firework-y);
+  width: 0;
+  height: 0;
+  filter: drop-shadow(0 0 10px hsla(var(--firework-hue), 100%, 68%, 0.55));
+}
+
+.completion-firework__spark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--spark-size);
+  height: calc(var(--spark-size) * 3.2);
+  border-radius: 999px;
+  background: linear-gradient(180deg, hsla(var(--spark-hue), 100%, 76%, 1) 0%, hsla(var(--spark-hue), 100%, 60%, 0.88) 45%, hsla(var(--spark-hue), 100%, 58%, 0) 100%);
+  transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateY(0);
+  opacity: 0;
+  animation: completion-fireworks-spark 920ms cubic-bezier(0.16, 1, 0.3, 1) var(--spark-delay) both;
+}
+
+@keyframes completion-fireworks-fade {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes completion-fireworks-flash {
+  0% {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  18% {
+    opacity: 0.94;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes completion-fireworks-twinkle {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes completion-fireworks-spark {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateY(0) scale(0.35);
+  }
+  14% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.96;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateY(calc(var(--spark-distance) * 1px)) scale(0.06);
+  }
+}
 .exercise-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
 .exercise-button { border: 0; border-radius: 999px; padding: 8px 12px; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; background: #222; color: #fff; }
 .exercise-button.secondary { background: rgba(0, 0, 0, 0.08); color: #222; }
