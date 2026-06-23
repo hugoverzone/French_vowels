@@ -453,7 +453,7 @@ function renderExerciseItem(preserveFeedback = false) {
 
   if (!item.targetSounds.length) {
     if (!preserveFeedback) {
-      setExerciseFeedback("Aucun son vocalique n'a pu être déduit pour cette ligne. Passage automatique au suivant...", 'incorrect');
+      setExerciseFeedback('', '');
     }
     exerciseState.locked = true;
     completionAdvanceTimer = window.setTimeout(() => {
@@ -472,7 +472,7 @@ function renderExerciseItem(preserveFeedback = false) {
   }
 
   if (!preserveFeedback) {
-    setExerciseFeedback(`Cliquez sur la voyelle qui correspond au son ${item.soundIndex + 1} / ${item.targetSounds.length} de ce mot.`, '');
+    setExerciseFeedback('', '');
   }
 }
 
