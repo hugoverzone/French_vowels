@@ -14,6 +14,7 @@ const TIMINGS = {
   finalAdvanceMs: 2600
 };
 const COMPLETION_RING_ANIMATION_MS = 460;
+const COMPLETION_TRANSFER_DELAY_MS = 520;
 
 const elements = {
   exercisePanel: document.getElementById('exercise-panel'),
@@ -26,6 +27,7 @@ const elements = {
   exerciseFeedback: document.getElementById('exercise-feedback'),
   exerciseSpeak: document.getElementById('exercise-speak'),
   exerciseReplay: document.getElementById('exercise-replay'),
+  exerciseProgressGrid: document.querySelector('.exercise-progress-grid'),
   vowelButtons: [...document.querySelectorAll('.vowel')]
 };
 
@@ -33,6 +35,7 @@ let lexiquePromise = null;
 let vowelMapPromise = null;
 let completionAdvanceTimer = null;
 let completionFlashTimer = null;
+let completionWordProgressTimer = null;
 let progressRingAnimationTimers = new WeakMap();
 
 const exerciseState = {
@@ -313,6 +316,13 @@ function clearCompletionTimers() {
     window.clearTimeout(completionFlashTimer);
     completionFlashTimer = null;
   }
+
+  if (completionWordProgressTimer) {
+    window.clearTimeout(completionWordProgressTimer);
+    completionWordProgressTimer = null;
+  }
+
+  elements.exerciseProgressGrid?.classList.remove('is-transferring');
 }
 
 function getCompletedSegmentCount(item) {
@@ -426,6 +436,31 @@ function updateExerciseProgress(item, options = {}) {
     ring: elements.exerciseWordProgress,
     value: elements.exerciseWordProgressValue
   }, completedWords, totalWords, animateWords);
+}
+
+function stageCompletionProgress(item) {
+  const totalWords = exerciseState.items.length;
+  const soundTotal = item ? item.targetSounds.length : 0;
+  const soundProgress = item ? Math.min(item.soundIndex, soundTotal) : 0;
+  const completedWords = Math.min(totalWords, exerciseState.index + 1);
+
+  setProgressRing({
+    ring: elements.exerciseSoundProgress,
+    value: elements.exerciseSoundProgressValue
+  }, soundProgress, soundTotal, true);
+
+  elements.exerciseProgressGrid?.classList.add('is-transferring');
+
+  completionWordProgressTimer = window.setTimeout(() => {
+    elements.exerciseProgressGrid?.classList.remove('is-transferring');
+
+    setProgressRing({
+      ring: elements.exerciseWordProgress,
+      value: elements.exerciseWordProgressValue
+    }, completedWords, totalWords, true);
+
+    completionWordProgressTimer = null;
+  }, COMPLETION_TRANSFER_DELAY_MS);
 }
 
 function setExerciseFeedback(message, tone = '') {
@@ -543,6 +578,17 @@ function buildExerciseItem(entry, row, phoneticToSound) {
   };
 }
 
+function shuffleExerciseItems(items) {
+  const shuffledItems = [...items];
+
+  for (let index = shuffledItems.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffledItems[index], shuffledItems[swapIndex]] = [shuffledItems[swapIndex], shuffledItems[index]];
+  }
+
+  return shuffledItems;
+}
+
 function handleVowelSelection(sound) {
   const item = getCurrentItem();
   const currentTargetSound = getCurrentTargetSound(item);
@@ -565,20 +611,22 @@ function handleVowelSelection(sound) {
     delete item.flashRange;
     delete item.missedRange;
     renderWordDisplay(item);
-    updateExerciseProgress(item, {
-      animateSound: true,
-      animateWords: item.soundIndex >= item.targetSounds.length
-    });
 
     if (item.soundIndex >= item.targetSounds.length) {
+      stageCompletionProgress(item);
       setExerciseFeedback(`Bien joué. ${item.word} est terminé.`, 'correct');
       completionAdvanceTimer = window.setTimeout(() => {
         if (exerciseState.locked) {
           advanceExercise();
         }
-      }, TIMINGS.finalAdvanceMs);
+      }, TIMINGS.finalAdvanceMs + COMPLETION_TRANSFER_DELAY_MS);
       return;
     }
+
+    updateExerciseProgress(item, {
+      animateSound: true,
+      animateWords: false
+    });
 
     setExerciseFeedback(`Bien joué. Son ${item.soundIndex} trouvé pour ${item.word}.`, 'correct');
     completionAdvanceTimer = window.setTimeout(() => {
@@ -642,6 +690,8 @@ async function initExercise() {
         return buildExerciseItem(entry, row, phoneticToSound);
       })
       .filter(Boolean);
+
+    exerciseState.items = shuffleExerciseItems(exerciseState.items);
 
     if (!exerciseState.items.length) {
       elements.exerciseWord.textContent = 'Aucune ligne correspondante trouvée.';
